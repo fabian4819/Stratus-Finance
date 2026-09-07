@@ -1,0 +1,29 @@
+{
+  "name": "@stratus-finance/contracts",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Stratus Finance lending core (Bonzo/Aave v2 fork) + basket vault contracts",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "test:coverage": "hardhat coverage",
+    "node": "hardhat node",
+    "deploy:testnet": "hardhat run script/00-deploy-core.ts --network hederaTestnet",
+    "configure:reserves": "hardhat run script/01-configure-reserves.ts --network hederaTestnet",
+    "deploy:vault": "hardhat run script/02-deploy-vault.ts --network hederaTestnet",
+    "demo:liquidation": "hardhat run script/demo-liquidation.ts --network hederaTestnet",
+    "lint": "solhint 'src/**/*.sol'"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@openzeppelin/contracts": "^4.9.6",
+    "dotenv": "^16.4.5",
+    "hardhat": "^2.22.5",
+    "solhint": "^5.0.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.4"
+  },
+  "dependencies": {
+    "@pythnetwork/pyth-sdk-solidity": "^4.0.0"
+  }
+}
