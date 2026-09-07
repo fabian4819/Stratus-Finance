@@ -48,12 +48,22 @@ contract StratusVault is ReentrancyGuard {
         componentA = basketToken.componentA();
         componentB = basketToken.componentB();
 
-        // Approved once at construction, not per-call: the vault never
-        // custodies these tokens outside a single transaction, so a
-        // standing max approval to the pool adds no risk beyond the trust
-        // the protocol already places in the pool itself.
-        componentA.safeApprove(pool_, type(uint256).max);
-        componentB.safeApprove(pool_, type(uint256).max);
+        // No component approval here, on purpose: when the components are
+        // ATS diamonds, `approve()` itself reverts (AccountIsBlocked)
+        // unless the caller granting the allowance is already on the
+        // token's control list — and this vault can't be whitelisted
+        // before it has an address, i.e. before construction finishes.
+        // Approval is granted lazily on first use in `depositBasket`
+        // instead, by which point deployment scripts have had the chance
+        // to whitelist this vault. See docs/phase-2-findings.md.
+    }
+
+    /// @dev Grants `spender` a standing max allowance the first time it's
+    /// needed, then no-ops on every subsequent call.
+    function _ensureApproved(IERC20 token, address spender, uint256 amount) internal {
+        if (token.allowance(address(this), spender) < amount) {
+            token.safeApprove(spender, type(uint256).max);
+        }
     }
 
     /// @notice Deposits `basketAmount` of the basket token, decomposing it
@@ -64,6 +74,9 @@ contract StratusVault is ReentrancyGuard {
 
         IERC20(address(basketToken)).safeTransferFrom(msg.sender, address(this), basketAmount);
         (uint256 amountA, uint256 amountB) = basketToken.redeem(basketAmount);
+
+        _ensureApproved(componentA, address(pool), amountA);
+        _ensureApproved(componentB, address(pool), amountB);
 
         pool.deposit(address(componentA), amountA, msg.sender, REFERRAL_CODE);
         pool.deposit(address(componentB), amountB, msg.sender, REFERRAL_CODE);
