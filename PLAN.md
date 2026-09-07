@@ -87,12 +87,12 @@ Days are relative (D1 = first build day), sized for a ~3-week hackathon window. 
 
 The three things most likely to kill this project, tested first, before any product code.
 
-- [ ] Deploy a trivial contract to Hedera testnet via Hardhat + HashIO. Confirm gas/EVM behaviour.
-- [ ] **Deploy an unmodified Aave v2 `LendingPool` to Hedera testnet.** This is spike #1 — it is a large contract and Hedera has its own gas ceiling per transaction. If it fails, we need the libraries-as-external-links deployment path (Aave v2 already splits `ReserveLogic`/`GenericLogic`/`ValidationLogic` into linked libraries — use them).
-- [ ] **Read a live Pyth price on Hedera testnet** (XAU/USD + an equity or index feed). Confirm feed IDs exist and update frequently enough. Spike #2.
-- [ ] **Mint one ATS token and transfer it between two EOAs.** ATS tokens are compliance-gated security tokens; transfers to arbitrary addresses may be blocked by control lists. Spike #3 — and the single biggest integration risk, because Aave requires transfers to the aToken contract.
+- [~] Deploy a trivial contract to Hedera testnet via Hardhat + HashIO. Confirm gas/EVM behaviour. **Infra confirmed working (signing + RPC + balance read all correct); blocked on funding the deployer address.** See `docs/phase-0-findings.md`.
+- [ ] **Deploy an unmodified Aave v2 `LendingPool` to Hedera testnet.** This is spike #1 — it is a large contract and Hedera has its own gas ceiling per transaction. If it fails, we need the libraries-as-external-links deployment path (Aave v2 already splits `ReserveLogic`/`GenericLogic`/`ValidationLogic` into linked libraries — use them). Blocked on the `contracts/lib/bonzo` submodule (see `contracts/lib/bonzo/SETUP.md`) and on funding.
+- [x] **Read a live Pyth price on Hedera testnet** (XAU/USD + an equity or index feed). Confirm feed IDs exist and update frequently enough. Spike #2. **Done — see `docs/phase-0-findings.md`. Real finding: Hedera testnet's Pyth contract is a pull oracle nobody keeps warm (every feed checked was stale); no equity/stock-index feed exists at all (`PriceFeedNotFound`), substituted with ETH/USD per §6.1. `StratusPriceOracle` needs an `updatePriceFeeds` pass-through added in Phase 2 — not yet implemented.**
+- [ ] **Mint one ATS token and transfer it between two EOAs.** ATS tokens are compliance-gated security tokens; transfers to arbitrary addresses may be blocked by control lists. Spike #3 — and the single biggest integration risk, because Aave requires transfers to the aToken contract. Blocked on funding.
 
-**Gate 0:** all three spikes green, or a documented fallback chosen (see §7).
+**Gate 0:** all three spikes green, or a documented fallback chosen (see §7). **Currently: 1/3 done, 2/3 blocked purely on a funded testnet account — see `docs/phase-0-findings.md` for the exact address to fund.**
 
 ### Phase 1 — Assets (D3–D4)
 
