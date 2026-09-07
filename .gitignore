@@ -5,6 +5,8 @@ node_modules/
 contracts/artifacts/
 contracts/cache/
 contracts/typechain-types/
+contracts/artifacts-bonzo-spike/
+contracts/cache-bonzo-spike/
 frontend/dist/
 frontend/build/
 *.tsbuildinfo
