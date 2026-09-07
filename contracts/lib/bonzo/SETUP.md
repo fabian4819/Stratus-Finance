@@ -44,7 +44,7 @@ them here.
 ## Phase 0 spike result: SUCCESS
 
 Deployed for real to Hedera testnet (chain id 296) via a one-off
-`hardhat.bonzo-spike.config.ts` (sources pointed at this directory,
+`hardhat.bonzo.config.ts` (sources pointed at this directory,
 solc 0.6.12, `evmVersion: istanbul` — matching Bonzo's own config exactly)
 and `lib/bonzo/spike-test/deploy-spike.ts`. See `docs/phase-0-findings.md`
 for full gas numbers and addresses. Headline result: **no gas or

@@ -7,7 +7,7 @@ import { ethers } from "hardhat";
  * initialize() to confirm both deployment AND execution work within
  * Hedera's gas behaviour - not just that the bytecode fits.
  *
- * Run with: npx hardhat run lib/bonzo/spike-test/deploy-spike.ts --config hardhat.bonzo-spike.config.ts --network hederaTestnet
+ * Run with: npx hardhat run lib/bonzo/spike-test/deploy-spike.ts --config hardhat.bonzo.config.ts --network hederaTestnet
  */
 async function main() {
   const [deployer] = await ethers.getSigners();
