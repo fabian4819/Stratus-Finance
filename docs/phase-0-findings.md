@@ -1,100 +1,207 @@
 # Phase 0 spike findings
 
-Run log for PLAN.md's Phase 0 de-risking spikes. Read-only checks were run
-directly against Hedera testnet via HashIO; anything requiring a
-transaction is blocked on a funded operator account (see status below).
+All four spikes from `PLAN.md` §Phase 0 are complete. **Gate 0: passed —
+no fallback needed for any of them.** This is the full run log.
 
-## Spike #2 — Read a live Pyth price on Hedera testnet ✅ DONE (with a real finding)
+Deployer used throughout: `0x4B1f9ba6A6281ED5C889c4B67d40e4bf7503Ac72`
+(funded with 100 testnet HBAR; 65.6 HBAR remaining after all spikes below).
 
-**Pyth contract on Hedera testnet:** `0xA2aa501b19aff244D90cc15a4Cf739D2725B5729`
-(confirmed live — 708-byte proxy, `getValidTimePeriod()` returns `60`).
-Same address on Hedera mainnet.
+---
+
+## Spike: read a live Pyth price on Hedera testnet ✅ DONE
+
+**Pyth contract:** `0xA2aa501b19aff244D90cc15a4Cf739D2725B5729` (confirmed
+live — 708-byte proxy, `getValidTimePeriod()` returns `60`). Same address
+on Hedera mainnet.
 
 **XAU/USD** (`0x765d2ba906dbc32ca17cc11f5310a89e9ee1f6420508c63861f2f8ba4ee34bb2`):
-feed exists and returns a price via `getPriceUnsafe` — **but it is ~6
-months stale** (last publish 2026-03-11). `getPriceNoOlderThan(id, 60)`
-reverts, as it should given that staleness.
+feed exists, but was ~6 months stale at check time. `getPriceNoOlderThan(id, 60)`
+correctly reverts on that staleness.
 
 **SPY/USD** (`0x19e09bb805456ada3979a7d1cbb4b6d63babc3a0f8e8a9509f68afa5c4c11cd5`):
-reverts with `PriceFeedNotFound()` (selector `0x14aebe68`) — this feed has
-**never** been pushed to Hedera testnet at all, not merely stale. Confirms
-PLAN.md §6.1's contingency is necessary, not optional: **no equity/stock
-index feed is usable on Hedera testnet.**
+reverts with `PriceFeedNotFound()` (selector `0x14aebe68`) — **never**
+pushed to Hedera testnet at all. Confirms PLAN.md §6.1's equity-feed
+contingency is required, not optional.
 
-**BTC/USD** and **ETH/USD** do exist and are fresher (~14 days stale at
-check time) than XAU, but still fail a 60s staleness check. Chosen as the
-"volatile leg" substitute per §6.1 — `contracts/.env` now points
-`PYTH_FEED_ID_STOCK_INDEX` at ETH/USD (`0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace`).
-Recorded here as a substitution, per §6.1's honesty requirement — the
-frontend/README should say "ETH-tracking" or similar wherever it currently
-implies a real stock index.
+**BTC/USD and ETH/USD** exist and were fresher (~14 days stale) than XAU.
+Chosen as the "volatile leg" substitute — `contracts/.env`'s
+`PYTH_FEED_ID_STOCK_INDEX` points at ETH/USD
+(`0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace`).
+State this substitution plainly wherever the UI/README implies a real
+stock index.
 
-### Architectural implication (new, not in the original PLAN.md)
+**Architectural implication (new, not in the original plan):** Hedera
+testnet's Pyth contract is a pull oracle nobody keeps warm — every feed
+checked was stale by hours to months. `StratusPriceOracle` needs an
+`updatePriceFeeds` pass-through (accept `bytes[] calldata priceUpdateData`,
+forward to `pyth.updatePriceFeeds{value: fee}(...)`, fee via
+`pyth.getUpdateFee`), fetched from Hermes
+(`https://hermes.pyth.network/v2/updates/price/latest?ids[]=<feedId>`)
+right before any borrow/liquidate call. **Not yet implemented in
+`StratusPriceOracle.sol`** — tracked as a Phase 2 action item.
 
-**Hedera testnet's Pyth contract is a pull oracle nobody keeps warm.**
-Every feed checked was stale by hours-to-months, meaning `StratusPriceOracle`
-cannot assume a fresh price is already cached — something has to actively
-call `pyth.updatePriceFeeds{value: fee}(priceUpdateData)` with a current
-Hermes VAA before any read that must pass a staleness check (borrow,
-liquidate). Two ways to handle this, and Option A is the standard pattern
-for pull-oracle Aave-style integrations:
+---
 
-- **Option A (recommended):** `StratusPriceOracle` (or the vault/pool entry
-  points) accept `bytes[] calldata priceUpdateData` and forward it to
-  `pyth.updatePriceFeeds` in the same transaction as the action that reads
-  price, paying `pyth.getUpdateFee(data)` in HBAR. The frontend fetches the
-  update data from Hermes (`https://hermes.pyth.network/v2/updates/price/latest?ids[]=<feedId>`)
-  right before submitting.
-- **Option B:** a keeper/cron script periodically calls `updatePriceFeeds`
-  independent of user actions. Simpler for a demo, but adds an off-chain
-  moving part that can silently go stale between demo runs.
+## Spike: deploy a trivial contract to Hedera testnet ✅ DONE
 
-**Action item added to PLAN.md Phase 2:** `StratusPriceOracle` needs an
-update path (Option A), not just a getter. Not yet implemented in
-`StratusPriceOracle.sol` — tracked here until it is.
+Deployed `MockUSDC`, minted to self, read the balance back — full
+deploy → write → read cycle on real Hedera testnet.
 
-## Spike #1 — Deploy a trivial contract to Hedera testnet ⏳ BLOCKED on funding
+- Deploy tx: `0x4e2e5827f18f0a71c51e114603cc7658b6048ed4ae5b9e52d35d8407149c56f1`
+- Gas used: 616,816
+- Deployed address: `0x7Cc34b81aD503A434705ca6F00BE52ABdb9d6C5F`
 
-Confirmed the full signing/RPC pipeline works end-to-end: Hardhat config
-resolves the HashIO RPC, ethers derives the correct EVM address from the
-configured key, and `provider.getBalance` reads `0`. Deployment of
-`MockUSDC` fails with `Sender account not found` — expected, since a fresh
-EVM key has no Hedera account until it receives its first HBAR transfer
-(auto-account-creation).
+No surprises — confirms the Hardhat + HashIO + ethers pipeline (config,
+signing, gas estimation) all behave as expected on Hedera's EVM.
 
-**Throwaway deployer address generated for this repo:**
-`0x4B1f9ba6A6281ED5C889c4B67d40e4bf7503Ac72`
-(private key stored in `contracts/.env`, gitignored, testnet-only — worth
-nothing outside this network).
+---
 
-**Needs:** testnet HBAR sent to that address (Hedera Portal faucet,
-https://portal.hedera.com, or any funded testnet account) before this spike
-— and #1's Aave v2 pool deploy, and #4's ATS mint — can actually run.
+## Spike: deploy an unmodified Aave v2 `LendingPool` to Hedera testnet ✅ DONE
 
-## Spike #2 (original numbering, Aave v2 pool deploy) — ⏳ BLOCKED
+**This was the highest-risk spike in the plan** ("large contract, Hedera
+has its own gas ceiling") — result: **no issue found.**
 
-Blocked on both funding (above) and the `contracts/lib/bonzo` submodule,
-which could not be cloned in this sandbox (see `contracts/lib/bonzo/SETUP.md`
-— clone attempts produced a corrupted `.git` with a broken `HEAD` under
-network throttling). Needs a working-network environment to `git submodule
-add` it, then a funded account to deploy.
+Vendored the real Bonzo/Aave v2 source (see `contracts/lib/bonzo/SETUP.md`
+for exactly how and what was trimmed) and deployed the library-linked core
+for real:
 
-## Spike #4 — Mint one ATS token and transfer it between two EOAs ⏳ BLOCKED on funding
+| Contract | Address | Gas used |
+|---|---|---|
+| GenericLogic (library) | `0xB77316744363775bBb358Cb50B88A3014aB2d51D` | 852,148 |
+| ReserveLogic (library) | `0x32e8136dc809D74aD770dbEa4DBDa43945aD79BC` | 176,655 |
+| ValidationLogic (library, linked to GenericLogic) | `0x927D46C76511c8d9d504e5BF67E71b713efD1468` | 1,968,872 |
+| LendingPool (linked to ReserveLogic + ValidationLogic) | `0xe2ABFfe63fF5018bEEC5031Ea547C5a55856ae92` | 4,600,154 |
+| LendingPoolAddressesProvider | `0xcEf8a535aBc5036a417c4Ae3c0319230dF6Ee69A` | 1,733,492 |
+| `LendingPool.initialize(provider)` (execution, not just deploy) | — | 135,339 |
 
-Not yet attempted — `Equity.create` costs HBAR (see `tokenization/scripts/issue-assets.ts`).
-Confirmed testnet ATS coordinates are in `tokenization/.env.example`
-(Resolver `0.0.6797832`, Factory `0.0.6797955`) from Phase 0 research
-already folded into PLAN.md §6.2, but not yet exercised against a live
-account.
+Bytecode sizes (all well under the EIP-170 24,576-byte limit, so this was
+never actually a size problem — the real question was gas, and that
+cleared too):
+
+LendingPool 20,935B · LendingPoolConfigurator 17,572B ·
+LendingPoolCollateralManager 10,735B · AToken 10,969B ·
+LendingPoolAddressesProvider 7,514B · StableDebtToken 7,456B ·
+ValidationLogic 8,871B · VariableDebtToken 6,087B · GenericLogic 3,701B ·
+DefaultReserveInterestRateStrategy 3,405B · ReserveLogic 571B.
+
+**134 of the 144 vendored Solidity files compile cleanly** against solc
+0.6.12 with `evmVersion: istanbul` (matching Bonzo's own config); the 10
+excluded files are unrelated SaucerSwap/Chainlink peripherals, not part of
+the core pool (see `contracts/lib/bonzo/SETUP.md`).
+
+**Conclusion: PLAN.md risk #1 is closed.** No library-splitting workaround
+beyond what Aave v2 already does (ReserveLogic/GenericLogic/ValidationLogic
+as external libraries) was needed — that standard pattern just works.
+Phase 2 can proceed with the real upgradeable-proxy deploy flow with
+confidence.
+
+---
+
+## Spike: mint one ATS token and transfer it between two EOAs ✅ DONE
+
+**This was flagged as the single biggest integration risk in the plan.**
+Result: it works, but getting there surfaced three real, non-obvious
+findings — recorded here and in `docs/ats-friction.md` for the upstream
+bonus contribution.
+
+### Finding 1: the SDK doesn't support headless/backend signing
+
+`@hashgraph/asset-tokenization-sdk`'s `Network.connect` only accepts
+`SupportedWallets.{METAMASK, HWALLETCONNECT, DFNS, FIREBLOCKS, AWSKMS}` —
+a browser extension, an interactive WalletConnect pairing, or an
+enterprise custodial KMS account. There is no "raw private key, no
+browser" mode, despite the README reading as if `Network.connect` were
+generically usable from a script.
+
+**Pivoted to calling the ATS diamond contracts directly** via
+`@hashgraph/asset-tokenization-contracts` (installed as a transitive dep
+of the SDK) — its shipped `deployEquityFromFactory` helper and typechain
+types, driven by a plain `ethers.Wallet` from a raw private key. This is
+also more representative of how `StratusVault` will actually interact
+with these tokens in production (contract ABI level, not through the
+SDK), so the pivot cost nothing.
+
+### Finding 2: the SDK README's testnet Factory/Resolver addresses are stale
+
+The README's `Resolver: 0.0.6797832` / `Factory: 0.0.6797955` both revert
+on *every* call (even simple view functions) — bytecode present, but
+functionally dead. Confirmed via
+`hashgraph/asset-tokenization-studio`'s own `packages/ats/contracts/deployments/hedera-testnet/`
+directory that the BusinessLogicResolver has been redeployed multiple
+times since (most recently 2026-06-12, well after whatever date the SDK
+README was last written). **Live addresses as of this spike:**
+
+- Resolver (BLR) proxy: `0xBA2D5FC2083A0b8f164c50e65d782087fBA18E0a`
+- Factory proxy: `0xd1F118A40f3b02883D35909eF2517e7EDd78379d`
+
+`tokenization/.env.example` and `spike-ats-mint-transfer.ts` now use
+these. **Before Phase 1, re-check
+`packages/ats/contracts/deployments/hedera-testnet/` for anything newer**
+— this can drift again.
+
+### Finding 3: two on-chain validation quirks (now handled)
+
+- ISIN must pass a real ISO 6166 length+checksum check
+  (`WrongISIN`/`WrongISINChecksum`) — a made-up value like
+  `"STRATUSSPIKE01"` reverts. Used Apple's real ISIN (`US0378331005`) for
+  the spike, matching the package's own documented example; Phase 1 should
+  either use a real ISIN per asset or generate a valid checksum for a
+  made-up one (algorithm is in
+  `node_modules/@hashgraph/asset-tokenization-contracts/contracts/factory/isinValidator.sol`).
+- `RegulationType.NONE` + `RegulationSubType.NONE` is an explicitly
+  forbidden combination (`RegulationTypeAndSubTypeForbidden`) — must pick
+  a real regulation (used `REG_S`/`NONE`, matching the package's own
+  documented example).
+- In `isWhiteList: true` mode, **even the admin/issuer must be added to
+  the token's own control list before it can hold minted tokens** —
+  minting to a non-whitelisted address (including the deployer itself)
+  reverts with `AccountIsBlocked(address)`. Not mentioned in the README;
+  found by decoding the revert selector against the contracts' own error
+  declarations.
+
+### Result
+
+Full sequence executed for real on Hedera testnet:
+
+1. Deployed a real ATS Equity diamond ("Stratus Spike Gold", SPIKE-GOLD) via the Factory.
+2. Whitelisted the admin itself, then minted 1000 tokens to it.
+3. Attempted a transfer to a fresh, never-whitelisted EOA — **reverted**, confirming the control-list gate actually blocks unlisted accounts.
+4. Added that EOA to the control list (`isInControlList` → `true`).
+5. Retried the transfer — **succeeded**, balances updated correctly (990 / 10 split).
+
+Diamond address: `0x3cE557D17667aC0543D72303E7f3Af932c29ea56`. Key tx
+hashes: mint `0xd5890cd02f5a867cb9cf520be5e74ef9bd0b1ceba5fc22eba73477a8c7a5cf16`,
+blocked-transfer attempt (reverted, no hash), `addToControlList`
+`0x3609a5520ea3e060c36b8e79d8ab83f43ab41e2f498475406bd9401c0b7bde5d`,
+successful transfer `0xa63f10da9b16aeadc523efdb9aab2fae46513419d23163f7d0ac9707f3182836`.
+
+**Conclusion: PLAN.md risk #2 is closed for the interface-compatibility
+question** (confirmed real ERC20 surface, confirmed control-list gating
+behaves exactly as designed) **and now precisely scoped for Phase 1**:
+every protocol address that needs to hold or move these tokens (aToken
+contracts, `StratusVault`, any liquidator) must be
+`addToControlList`-ed — `tokenization/scripts/whitelist-protocol-addresses.ts`
+already anticipates this, though it still goes through the (non-working,
+per Finding 1) SDK path and should be ported to the direct-contract-call
+pattern proven here.
+
+---
 
 ## Summary
 
-| Spike | Status |
-|---|---|
-| #2 Pyth read | ✅ Done — feed availability confirmed, staleness/pull-oracle issue found and documented, XAU stays, equity leg substituted with ETH/USD |
-| #1 Trivial deploy | ⏳ Infra confirmed working; blocked on funding |
-| #2 (orig) Aave v2 pool deploy | ⏳ Blocked on funding + Bonzo submodule clone |
-| #4 ATS mint/transfer | ⏳ Blocked on funding |
+| Spike | Status | Fallback needed? |
+|---|---|---|
+| Pyth price read | ✅ Done | Yes — equity feed substituted with ETH/USD (per §6.1, as planned) |
+| Trivial contract deploy | ✅ Done | No |
+| Aave v2 `LendingPool` deploy | ✅ Done | No — highest-risk spike, fully cleared |
+| ATS mint + transfer + control list | ✅ Done | No — pivoted SDK→direct-contract-calls, no fallback to a wrapper needed |
 
-**Next step:** fund `0x4B1f9ba6A6281ED5C889c4B67d40e4bf7503Ac72` with testnet
-HBAR, then re-run the blocked spikes.
+**Gate 0: PASSED.** All four spikes are green. Proceed to Phase 1/2.
+
+## Carried-forward action items for later phases
+
+1. `StratusPriceOracle` needs an `updatePriceFeeds` pass-through (pull-oracle finding above) — Phase 2.
+2. Port `tokenization/scripts/whitelist-protocol-addresses.ts` (and `issue-assets.ts`) from the SDK-based approach to the direct-contract-call pattern proven in `spike-ats-mint-transfer.ts` — Phase 1.
+3. Re-verify Resolver/Factory addresses against `packages/ats/contracts/deployments/hedera-testnet/` before Phase 1 issuance — they may have moved again.
+4. Real per-asset ISINs (or validly-checksummed made-up ones) needed for GOLD-x/STOCK-x — Phase 1.
+5. Every protocol contract address (aTokens, vault, liquidator) must be added to each ATS token's control list before Phase 2/3/4 can move real tokens through the pool.
