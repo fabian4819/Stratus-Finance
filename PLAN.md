@@ -105,10 +105,10 @@ The three things most likely to kill this project, tested first, before any prod
 
 ### Phase 2 — Lending core stood up (D5–D8)
 
-- [ ] Fork Bonzo contracts into `contracts/lib/bonzo`, pinned to a specific commit, recorded in `docs/`.
-- [ ] Deploy: `LendingPoolAddressesProvider`, `LendingPool`, `LendingPoolConfigurator`, `LendingPoolCollateralManager`, `aToken`/`stableDebtToken`/`variableDebtToken` implementations, `DefaultReserveInterestRateStrategy`.
-- [ ] `StratusPriceOracle.sol` (Pyth-backed, USD/18dp) wired into the addresses provider + `LendingRateOracle`.
-- [ ] Init three reserves with **deliberately different** risk params — the whole point is that they are not uniform:
+- [x] Fork Bonzo contracts into `contracts/lib/bonzo`, pinned to a specific commit, recorded in `docs/`. **Done in Phase 0** — vendored (not submodule, see `contracts/lib/bonzo/SETUP.md`), commit `38441b697a51c22bef6a9fb660bea46aa429c11c`.
+- [x] Deploy: `LendingPoolAddressesProvider`, `LendingPool`, `LendingPoolConfigurator`, `LendingPoolCollateralManager`, `aToken`/`stableDebtToken`/`variableDebtToken` implementations, `DefaultReserveInterestRateStrategy`. **Done for real on testnet**, through the standard upgradeable-proxy flow (`setLendingPoolImpl`/`setLendingPoolConfiguratorImpl` auto-create + initialize their proxies) — not the bare-implementation shortcut the Phase 0 spike used. Every address in `deployments/hederaTestnet.json`; full writeup in `docs/phase-2-findings.md`.
+- [x] `StratusPriceOracle.sol` (Pyth-backed, USD/18dp) wired into the addresses provider + `LendingRateOracle`. **Done** — oracle deployed and feeds wired for GOLD-x/STOCK-x/USDC in Phase 2's first step (`00-deploy-oracle.ts`); `LendingRateOracle` deployed and given a nominal 5% rate for all three (stable borrowing is disabled everywhere, so this value is never actually load-bearing — it only needs to exist so `DefaultReserveInterestRateStrategy`'s unconditional read doesn't hit an empty address).
+- [x] Init three reserves with **deliberately different** risk params — the whole point is that they are not uniform:
 
   | Reserve | LTV | Liq. threshold | Liq. bonus | Rationale |
   |---|---|---|---|---|
@@ -116,11 +116,11 @@ The three things most likely to kill this project, tested first, before any prod
   | STOCK-x | 55% | 65% | 10% | Higher volatility, equity drawdown risk |
   | USDC | — | — | — | Borrow-only, not enabled as collateral |
 
-  (Numbers are the starting point; document the reasoning in `docs/risk-params.md` — judges will ask why they differ.)
-- [ ] Seed USDC liquidity from a deployer account so borrowing is possible.
-- [ ] Integration test: deposit GOLD-x directly → borrow USDC → repay → withdraw.
+  (Numbers are the starting point; document the reasoning in `docs/risk-params.md` — judges will ask why they differ.) **Set for real via `configureReserveAsCollateral`/`enableBorrowingOnReserve` — confirmed on-chain exactly as above.**
+- [x] Seed USDC liquidity from a deployer account so borrowing is possible. **Done — 100,000 USDC deposited** (`contracts/script/seed-usdc-liquidity.ts`).
+- [~] Integration test: deposit GOLD-x directly → borrow USDC → repay → withdraw. **Deposit → withdraw leg verified for real** (`contracts/script/verify-gate2-deposit-withdraw.ts`, exact round trip). **Borrow → repay leg blocked**: Pyth's Hermes API started requiring a key on 2026-08-26 (confirmed dated, not sandbox-specific — see `docs/phase-2-findings.md`), so there's currently no way to push a fresh price on-chain, and every cached Hedera-testnet price is stale. `getUserAccountData` and `borrow` both revert on that staleness. User is registering for a free key (pythdata.app); resume once available.
 
-**Gate 2:** a full deposit/borrow/repay/withdraw cycle works on testnet against the *raw* pool, with no basket involved. If this doesn't work, nothing above it will.
+**Gate 2: partially passed.** Deposit/withdraw work exactly against the raw pool, with real tx hashes (`deployments/hederaTestnet.json` → `meta.gate2DepositWithdraw`). Borrow/repay — and thus the full gate — blocked purely on Pyth Hermes API access, not on anything in this codebase. See `docs/phase-2-findings.md`.
 
 ### Phase 3 — The basket vault (D9–D11) — *core original contribution*
 

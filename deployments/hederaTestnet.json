@@ -1,18 +1,43 @@
 {
   "network": "hederaTestnet",
-  "updatedAt": "2026-09-07T09:14:01.805Z",
+  "updatedAt": "2026-09-07T09:27:27.918Z",
   "contracts": {
     "GoldToken": "0xcF19378058EC9DFD25975527BDf7F68faeC2C7fc",
     "StockIndexToken": "0x59E3908069993cDDbD3C83479c1aFc92242c0d3A",
     "StratusBasketToken": "0x2255Eb7Bc29A27E2b9113D6BA28807812Bd4DEaD",
     "MockUSDC": "0xDc2088fd97eda106943cABf443cA5c6702c37154",
-    "StratusPriceOracle": "0xA1dd55c03063b71Ba7c4f5A6Ca41d19c4E512eCa"
+    "StratusPriceOracle": "0xA1dd55c03063b71Ba7c4f5A6Ca41d19c4E512eCa",
+    "GenericLogic": "0x6A467F653a4f9d893210b04d23d395cA7d3Ca195",
+    "ReserveLogic": "0x1fa99a5ea5840E95F24ac69ADea8dB99Fd555E36",
+    "ValidationLogic": "0x5eb95DE6049341c888B53DD0F4D48e29d0C7A4Df",
+    "LendingPoolImpl": "0x857B4990e2F6310E0B742061D84bcDbf6d3F9745",
+    "LendingPoolAddressesProvider": "0xC12dEfDD0b3e7E519a9044618Bf5B3E6e0EE4871",
+    "LendingPool": "0x36f251a19372c550cc3784E108391eeC004B903E",
+    "LendingPoolConfiguratorImpl": "0x5cd581243E130E758A5De2bD77d5dD15541733c1",
+    "LendingPoolConfigurator": "0xd3F84f2eeC50c812FdDdb9270cDb0470189Ec5A9",
+    "LendingPoolCollateralManager": "0xC40FAdeb2Bd8b07d3e4b3767942ac059b97B0324",
+    "LendingRateOracle": "0x5a59322cDc670b9b9E570d585f84ec8f5DF65cE4",
+    "ATokenImpl": "0x46d14edC6EA2b77dAb94851bA2eF8468a18BAb86",
+    "StableDebtTokenImpl": "0x27CD79b5c339F54D21Ee06df0c8e0C0eB519f1c0",
+    "VariableDebtTokenImpl": "0x374a5B3Fe1A972bd2AD511b1D1B7178027073A94",
+    "ProtocolDataProvider": "0x2775f3BA385c8d0787e3A770fC73c8D7E6Da9cd3",
+    "InterestRateStrategy_GOLD-x": "0xb06Dd1b43fF8ec2ab8D819d2d2fc5865538717c0",
+    "InterestRateStrategy_STOCK-x": "0x4e80aB43815527604a5239B13Eee56f45D15D9f6",
+    "InterestRateStrategy_USDC": "0x6969DA04bb088B9cbCFA29029F1761e9448cfE15",
+    "aToken_GOLD-x": "0x9dc1abEe1DDe62A7B50fc34A826F16ABb4f2e284",
+    "aToken_STOCK-x": "0x0C19b77B8bb49b86abbEC0f64bB5733C4CE2A03d",
+    "aToken_USDC": "0xDfc07b53E8D6aA1194E2E2Ef2d352B6bA049B1a1"
   },
   "meta": {
     "gate1RoundTrip": {
       "description": "PLAN.md Phase 1 Gate 1 verification: mint 100 basket tokens from real ATS GOLD-x/STOCK-x, redeem back to the exact original balances (10000/10000, zero dust).",
       "mintTx": "0x4c63274edc58d78b6abe0460515b094bd4d87d6810ca77127f288c98fe57037c",
       "redeemTx": "0xed32ada23b86bbd3f2930108ffbd17641b532d1797fc11235767e8d12e60666d"
+    },
+    "gate2DepositWithdraw": {
+      "description": "PLAN.md Phase 2 Gate 2, deposit/withdraw leg: deposit 100 GOLD-x directly into the raw pool, withdraw it back out, balances exact. Borrow/repay leg blocked on Pyth Hermes API access - see docs/phase-2-findings.md.",
+      "depositTx": "0x24622deacacc5fb1cb77f79f8fd2dca34edf7bdf9884e07f665cdeab3eee6b59",
+      "withdrawTx": "0x1bf6f915f272c9974e197cd49a0d95488ac37aaf014e0bc2154c31d8b8f2308a"
     }
   }
 }
