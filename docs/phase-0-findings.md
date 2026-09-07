@@ -200,8 +200,21 @@ pattern proven here.
 
 ## Carried-forward action items for later phases
 
-1. `StratusPriceOracle` needs an `updatePriceFeeds` pass-through (pull-oracle finding above) — Phase 2.
-2. Port `tokenization/scripts/whitelist-protocol-addresses.ts` (and `issue-assets.ts`) from the SDK-based approach to the direct-contract-call pattern proven in `spike-ats-mint-transfer.ts` — Phase 1.
-3. Re-verify Resolver/Factory addresses against `packages/ats/contracts/deployments/hedera-testnet/` before Phase 1 issuance — they may have moved again.
-4. Real per-asset ISINs (or validly-checksummed made-up ones) needed for GOLD-x/STOCK-x — Phase 1.
-5. Every protocol contract address (aTokens, vault, liquidator) must be added to each ATS token's control list before Phase 2/3/4 can move real tokens through the pool.
+1. `StratusPriceOracle` needs an `updatePriceFeeds` pass-through (pull-oracle finding above) — Phase 2. **Still open.**
+2. ~~Port `tokenization/scripts/whitelist-protocol-addresses.ts` (and `issue-assets.ts`) from the SDK-based approach to the direct-contract-call pattern proven in `spike-ats-mint-transfer.ts`~~ **Done in Phase 1** — see `tokenization/scripts/lib/ats-client.ts`.
+3. ~~Re-verify Resolver/Factory addresses against `packages/ats/contracts/deployments/hedera-testnet/` before Phase 1 issuance~~ **Done** — same addresses still live as of Phase 1 issuance.
+4. ~~Real per-asset ISINs (or validly-checksummed made-up ones) needed for GOLD-x/STOCK-x~~ **Done** — `tokenization/scripts/lib/isin.ts` generates checksum-valid synthetic ISINs (`USSTRATUSGX4`, `USSTRATUSSX9`), verified against a known-real ISIN's checksum first.
+5. Every protocol contract address (aTokens, vault, liquidator) must be added to each ATS token's control list before Phase 2/3/4 can move real tokens through the pool. **Mechanism ready** (`whitelist-protocol-addresses.ts`), **StratusBasketToken done**, aToken/Vault/liquidator entries pending those contracts' Phase 2/3 deploys.
+
+## Phase 1 result
+
+**Gate 1 passed for real on Hedera testnet** — see `PLAN.md` §Phase 1 and
+`deployments/hederaTestnet.json` (`meta.gate1RoundTrip`) for the exact
+mint/redeem tx hashes. Full asset list now live:
+
+| Contract | Address |
+|---|---|
+| GoldToken (ATS Equity) | `0xcF19378058EC9DFD25975527BDf7F68faeC2C7fc` |
+| StockIndexToken (ATS Equity) | `0x59E3908069993cDDbD3C83479c1aFc92242c0d3A` |
+| StratusBasketToken | `0x2255Eb7Bc29A27E2b9113D6BA28807812Bd4DEaD` |
+| MockUSDC | `0xDc2088fd97eda106943cABf443cA5c6702c37154` |

@@ -96,12 +96,12 @@ The three things most likely to kill this project, tested first, before any prod
 
 ### Phase 1 — Assets (D3–D4)
 
-- [ ] `tokenization/` scripts: issue **GOLD-x** and **STOCK-x** via ATS SDK, with mint-to-address helpers for demo funding.
-- [ ] Control-list / whitelist management script so the aToken, LendingPool, Vault, and BasketToken addresses are all transfer-permitted.
-- [ ] Deploy a plain mock **USDC** (6dp) as the borrowable asset — the debt asset is not the innovation and does not need ATS.
-- [ ] `StratusBasketToken.sol` + unit tests: mint/redeem round-trip preserves the 50/50 ratio exactly, no dust drain.
+- [x] `tokenization/` scripts: issue **GOLD-x** and **STOCK-x**, with mint-to-address helpers for demo funding. **Done — real ATS Equity diamonds deployed on Hedera testnet.** Went through direct ATS-contract calls (`tokenization/scripts/lib/ats-client.ts`), not the SDK — see docs/phase-0-findings.md Finding 1. GOLD-x `0xcF19378058EC9DFD25975527BDf7F68faeC2C7fc`, STOCK-x `0x59E3908069993cDDbD3C83479c1aFc92242c0d3A`, 10,000 of each minted to the deployer. ISINs are checksum-valid synthetic values (`tokenization/scripts/lib/isin.ts`), not real-world securities.
+- [x] Control-list / whitelist management script so the aToken, LendingPool, Vault, and BasketToken addresses are all transfer-permitted. **Done for what exists so far** — `tokenization/scripts/whitelist-protocol-addresses.ts` rewritten on the same direct-contract pattern; `StratusBasketToken`'s address is whitelisted on both assets. aToken/Vault/liquidator entries are wired up but skip gracefully until Phase 2/3 produce those addresses.
+- [x] Deploy a plain mock **USDC** (6dp) as the borrowable asset — the debt asset is not the innovation and does not need ATS. **Done — `0xDc2088fd97eda106943cABf443cA5c6702c37154`, 1,000,000 USDC minted to the deployer for later testing.**
+- [x] `StratusBasketToken.sol` + unit tests: mint/redeem round-trip preserves the 50/50 ratio exactly, no dust drain. **Done — unit tests pass locally (contracts/test/StratusBasketToken.test.ts) AND verified for real on testnet against the real ATS tokens (see Gate 1 below).** Deployed at `0x2255Eb7Bc29A27E2b9113D6BA28807812Bd4DEaD`.
 
-**Gate 1:** a wallet holds basket tokens minted from real ATS underlying, and can redeem back to the exact underlying amounts.
+**Gate 1: PASSED.** Minted 100 basket tokens from real GOLD-x/STOCK-x (pulling 50/50), redeemed them back — GOLD-x and STOCK-x balances returned to *exactly* their pre-mint values, basket balance exactly 0. Tx hashes in `deployments/hederaTestnet.json` under `meta.gate1RoundTrip`.
 
 ### Phase 2 — Lending core stood up (D5–D8)
 

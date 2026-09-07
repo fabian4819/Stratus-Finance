@@ -1,0 +1,17 @@
+{
+  "network": "hederaTestnet",
+  "updatedAt": "2026-09-07T09:02:23.332Z",
+  "contracts": {
+    "GoldToken": "0xcF19378058EC9DFD25975527BDf7F68faeC2C7fc",
+    "StockIndexToken": "0x59E3908069993cDDbD3C83479c1aFc92242c0d3A",
+    "StratusBasketToken": "0x2255Eb7Bc29A27E2b9113D6BA28807812Bd4DEaD",
+    "MockUSDC": "0xDc2088fd97eda106943cABf443cA5c6702c37154"
+  },
+  "meta": {
+    "gate1RoundTrip": {
+      "description": "PLAN.md Phase 1 Gate 1 verification: mint 100 basket tokens from real ATS GOLD-x/STOCK-x, redeem back to the exact original balances (10000/10000, zero dust).",
+      "mintTx": "0x4c63274edc58d78b6abe0460515b094bd4d87d6810ca77127f288c98fe57037c",
+      "redeemTx": "0xed32ada23b86bbd3f2930108ffbd17641b532d1797fc11235767e8d12e60666d"
+    }
+  }
+}
