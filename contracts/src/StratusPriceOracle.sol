@@ -12,6 +12,16 @@ import {IPyth, PythStructs} from "./interfaces/IPyth.sol";
 /// only requires internal consistency between reserves, not ETH
 /// denomination, despite the interface's historical naming. See PLAN.md §1.4.
 ///
+/// @dev PULL ORACLE: confirmed in PLAN.md Phase 0 that nothing keeps
+/// Hedera testnet's Pyth cache warm — every feed checked was stale by
+/// hours to months. `getAssetPrice` will revert on staleness
+/// (`getPriceNoOlderThan`) unless `updatePriceFeeds` has been called
+/// first in the same or a very recent transaction, with fresh update data
+/// fetched from Hermes (`https://hermes.pyth.network/v2/updates/price/latest?ids[]=<feedId>`).
+/// Callers that need a price to definitely succeed (borrow, liquidate)
+/// should submit the update alongside their action rather than assume the
+/// cache is warm.
+///
 /// @dev DEMO-ONLY: `setDemoOffsetBps` lets the owner apply a visible,
 /// event-logged offset to one asset's price, used solely to demonstrate
 /// isolated liquidation on testnet without waiting for a real market crash
@@ -61,6 +71,23 @@ contract StratusPriceOracle is IPriceOracleGetter, Ownable {
 
     function isDemoStressed(address asset) external view returns (bool) {
         return demoOffsetBps[asset] != 0;
+    }
+
+    /// @notice Pushes fresh Pyth price updates on-chain, paying the
+    /// required fee out of `msg.value` and refunding any excess.
+    /// Permissionless by design — a keeper, the frontend, or a user's own
+    /// wallet can all warm the cache before an action that needs a fresh
+    /// price, matching Pyth's standard pull-oracle integration pattern.
+    function updatePriceFeeds(bytes[] calldata priceUpdateData) external payable {
+        uint256 fee = pyth.getUpdateFee(priceUpdateData);
+        require(msg.value >= fee, "insufficient fee");
+
+        pyth.updatePriceFeeds{value: fee}(priceUpdateData);
+
+        if (msg.value > fee) {
+            (bool ok, ) = msg.sender.call{value: msg.value - fee}("");
+            require(ok, "refund failed");
+        }
     }
 
     /// @inheritdoc IPriceOracleGetter

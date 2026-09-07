@@ -23,4 +23,16 @@ interface IPyth {
     /// Display-only (e.g. "last updated Xs ago" in the UI) — never used for
     /// anything that gates borrowing or liquidation.
     function getPriceUnsafe(bytes32 id) external view returns (PythStructs.Price memory price);
+
+    /// @notice Pushes fresh price updates (Hermes VAAs) into Pyth's
+    /// on-chain cache. Required on Hedera testnet: confirmed in
+    /// PLAN.md Phase 0 that nothing else keeps these feeds warm — every
+    /// feed checked was stale by hours to months — so this must be called
+    /// before any `getPriceNoOlderThan` read that needs to succeed. See
+    /// `StratusPriceOracle.updatePriceFeeds`.
+    function updatePriceFeeds(bytes[] calldata updateData) external payable;
+
+    /// @notice The HBAR fee (in tinybar/wei terms, matching msg.value)
+    /// required to submit `updateData` via `updatePriceFeeds`.
+    function getUpdateFee(bytes[] calldata updateData) external view returns (uint256 feeAmount);
 }

@@ -30,4 +30,26 @@ contract MockPyth is IPyth {
         price = prices[id];
         require(price.publishTime != 0, "no price set");
     }
+
+    uint256 public constant MOCK_FEE_PER_UPDATE = 1 wei;
+
+    /// @dev Real Pyth update data is an opaque Hermes VAA blob; this mock
+    /// instead expects each entry to be `abi.encode(bytes32 id, int64
+    /// price, uint64 conf, int32 expo, uint256 publishTime)` so tests can
+    /// exercise `StratusPriceOracle.updatePriceFeeds` without a real Pyth
+    /// network round trip.
+    function updatePriceFeeds(bytes[] calldata updateData) external payable override {
+        require(msg.value >= getUpdateFee(updateData), "insufficient fee");
+        for (uint256 i = 0; i < updateData.length; i++) {
+            (bytes32 id, int64 price, uint64 conf, int32 expo, uint256 publishTime) = abi.decode(
+                updateData[i],
+                (bytes32, int64, uint64, int32, uint256)
+            );
+            prices[id] = PythStructs.Price({price: price, conf: conf, expo: expo, publishTime: publishTime});
+        }
+    }
+
+    function getUpdateFee(bytes[] calldata updateData) public pure override returns (uint256) {
+        return updateData.length * MOCK_FEE_PER_UPDATE;
+    }
 }
