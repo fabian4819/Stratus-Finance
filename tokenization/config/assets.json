@@ -1,0 +1,35 @@
+{
+  "comment": "Fixed-ratio, two-asset basket per PLAN.md §0. Ratios live in the StratusBasketToken deploy script (contracts/script/01-deploy-basket-token.ts), not here — this file only describes the ATS issuance parameters.",
+  "assets": [
+    {
+      "key": "GoldToken",
+      "name": "Stratus Gold Tracker",
+      "symbol": "GOLD-x",
+      "isin": "STRATUSGOLD01",
+      "currency": "USD",
+      "numberOfShares": "1000000",
+      "nominalValue": "1",
+      "nominalValueDecimals": 2,
+      "decimals": 18,
+      "regulationType": 0,
+      "regulationSubType": 0,
+      "isCountryControlListWhiteList": true,
+      "countries": ""
+    },
+    {
+      "key": "StockIndexToken",
+      "name": "Stratus Stock Index Tracker",
+      "symbol": "STOCK-x",
+      "isin": "STRATUSSTOCK01",
+      "currency": "USD",
+      "numberOfShares": "1000000",
+      "nominalValue": "1",
+      "nominalValueDecimals": 2,
+      "decimals": 18,
+      "regulationType": 0,
+      "regulationSubType": 0,
+      "isCountryControlListWhiteList": true,
+      "countries": ""
+    }
+  ]
+}

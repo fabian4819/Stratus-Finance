@@ -1,0 +1,21 @@
+{
+  "name": "@stratus-finance/tokenization",
+  "private": true,
+  "version": "0.1.0",
+  "description": "ATS SDK scripts: issue GOLD-x / STOCK-x, and control-list management for Stratus protocol addresses",
+  "type": "commonjs",
+  "scripts": {
+    "issue:assets": "ts-node scripts/issue-assets.ts",
+    "whitelist": "ts-node scripts/whitelist-protocol-addresses.ts",
+    "build": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "dotenv": "^16.4.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.4"
+  },
+  "dependencies": {
+    "@hashgraph/asset-tokenization-sdk": "^8.0.0",
+    "@hashgraph/sdk": "^2.53.0"
+  }
+}
