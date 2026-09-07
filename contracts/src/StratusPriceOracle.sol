@@ -73,13 +73,29 @@ contract StratusPriceOracle is IPriceOracleGetter, Ownable {
         return demoOffsetBps[asset] != 0;
     }
 
+    /// @dev Hedera's native HBAR ledger only tracks balances in whole
+    /// tinybars (1 tinybar = 1e10 wei at the EVM/JSON-RPC precision this
+    /// contract otherwise uses); a value transfer — including this
+    /// contract's own forwarded call to `pyth.updatePriceFeeds` — below
+    /// that granularity is rounded down, potentially to zero. Pyth's
+    /// quoted fee is a handful of wei, far below 1 tinybar, so it must be
+    /// rounded up before either the caller sends it or this contract
+    /// forwards it, or Pyth's own fee check sees msg.value=0. Confirmed by
+    /// testnet trial-and-error in Phase 2 — see docs/phase-2-findings.md.
+    uint256 internal constant TINYBAR_IN_WEI = 1e10;
+
+    function _roundUpToTinybar(uint256 amount) internal pure returns (uint256) {
+        if (amount == 0) return 0;
+        return ((amount + TINYBAR_IN_WEI - 1) / TINYBAR_IN_WEI) * TINYBAR_IN_WEI;
+    }
+
     /// @notice Pushes fresh Pyth price updates on-chain, paying the
     /// required fee out of `msg.value` and refunding any excess.
     /// Permissionless by design — a keeper, the frontend, or a user's own
     /// wallet can all warm the cache before an action that needs a fresh
     /// price, matching Pyth's standard pull-oracle integration pattern.
     function updatePriceFeeds(bytes[] calldata priceUpdateData) external payable {
-        uint256 fee = pyth.getUpdateFee(priceUpdateData);
+        uint256 fee = _roundUpToTinybar(pyth.getUpdateFee(priceUpdateData));
         require(msg.value >= fee, "insufficient fee");
 
         pyth.updatePriceFeeds{value: fee}(priceUpdateData);

@@ -34,6 +34,16 @@ describe("StratusPriceOracle", function () {
     );
   }
 
+  // Mirrors StratusPriceOracle's internal _roundUpToTinybar: Hedera's
+  // native HBAR ledger only tracks whole tinybars (1 tinybar = 1e10 wei at
+  // this contract's 18-decimal precision), so Pyth's few-wei fee gets
+  // rounded up before being charged/forwarded - see docs/phase-2-findings.md.
+  const TINYBAR_IN_WEI = 10_000_000_000n;
+  function roundUpToTinybar(amount: bigint): bigint {
+    if (amount === 0n) return 0n;
+    return ((amount + TINYBAR_IN_WEI - 1n) / TINYBAR_IN_WEI) * TINYBAR_IN_WEI;
+  }
+
   it("reverts on a stale price (nothing pushed yet)", async function () {
     const { asset, oracle } = await loadFixture(deployFixture);
     await expect(oracle.getAssetPrice(await asset.getAddress())).to.be.reverted;
@@ -45,7 +55,7 @@ describe("StratusPriceOracle", function () {
 
     // Pyth-style: price=245000, expo=-2 -> $2,450.00 -> 18-decimal: 2450 * 1e18
     const update = encodeUpdate(FEED_ID, 245_000n, 100n, -2, now);
-    const fee = await pyth.getUpdateFee([update]);
+    const fee = roundUpToTinybar(await pyth.getUpdateFee([update]));
 
     await oracle.updatePriceFeeds([update], { value: fee });
 
@@ -57,7 +67,7 @@ describe("StratusPriceOracle", function () {
     const { asset, oracle, pyth, deployer } = await loadFixture(deployFixture);
     const now = (await ethers.provider.getBlock("latest"))!.timestamp;
     const update = encodeUpdate(FEED_ID, 100n, 1n, 0, now);
-    const fee = await pyth.getUpdateFee([update]);
+    const fee = roundUpToTinybar(await pyth.getUpdateFee([update]));
     const overpay = fee + ethers.parseEther("1");
 
     const balanceBefore = await ethers.provider.getBalance(deployer.address);
@@ -74,7 +84,7 @@ describe("StratusPriceOracle", function () {
     const { asset, oracle, pyth } = await loadFixture(deployFixture);
     const now = (await ethers.provider.getBlock("latest"))!.timestamp;
     const update = encodeUpdate(FEED_ID, 100n, 1n, 0, now);
-    const fee = await pyth.getUpdateFee([update]);
+    const fee = roundUpToTinybar(await pyth.getUpdateFee([update]));
 
     await expect(oracle.updatePriceFeeds([update], { value: fee - 1n })).to.be.revertedWith("insufficient fee");
   });
@@ -83,7 +93,7 @@ describe("StratusPriceOracle", function () {
     const { asset, oracle, pyth, deployer } = await loadFixture(deployFixture);
     const now = (await ethers.provider.getBlock("latest"))!.timestamp;
     const update = encodeUpdate(FEED_ID, 100_000n, 1n, -2, now); // $1,000.00
-    const fee = await pyth.getUpdateFee([update]);
+    const fee = roundUpToTinybar(await pyth.getUpdateFee([update]));
     await oracle.updatePriceFeeds([update], { value: fee });
 
     await oracle.connect(deployer).setDemoOffsetBps(await asset.getAddress(), -4_000); // -40%
