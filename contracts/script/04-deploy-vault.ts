@@ -2,9 +2,8 @@ import { ethers, network } from "hardhat";
 import { saveContractAddress, requireContractAddress } from "./utils/deployments";
 
 /**
- * BLOCKED on Phase 2 (needs the pool address — see
- * contracts/script/README.md). Deploys StratusVault and StratusRiskView
- * once the pool and basket token both exist.
+ * PLAN.md Phase 3: deploys StratusVault and StratusRiskView now that
+ * Phase 2's pool and Phase 1's basket token both exist.
  */
 async function main() {
   const basketTokenAddress = requireContractAddress(network.name, "StratusBasketToken");

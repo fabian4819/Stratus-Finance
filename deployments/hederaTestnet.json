@@ -1,6 +1,6 @@
 {
   "network": "hederaTestnet",
-  "updatedAt": "2026-09-07T14:48:04.602Z",
+  "updatedAt": "2026-09-07T14:57:30.730Z",
   "contracts": {
     "GoldToken": "0xcF19378058EC9DFD25975527BDf7F68faeC2C7fc",
     "StockIndexToken": "0x59E3908069993cDDbD3C83479c1aFc92242c0d3A",
@@ -26,7 +26,9 @@
     "InterestRateStrategy_USDC": "0x6969DA04bb088B9cbCFA29029F1761e9448cfE15",
     "aToken_GOLD-x": "0x9dc1abEe1DDe62A7B50fc34A826F16ABb4f2e284",
     "aToken_STOCK-x": "0x0C19b77B8bb49b86abbEC0f64bB5733C4CE2A03d",
-    "aToken_USDC": "0xDfc07b53E8D6aA1194E2E2Ef2d352B6bA049B1a1"
+    "aToken_USDC": "0xDfc07b53E8D6aA1194E2E2Ef2d352B6bA049B1a1",
+    "StratusVault": "0x7F16Cd599BF2aDBBacD856263ef36eABFfeC06B2",
+    "StratusRiskView": "0x05aD00333d8bf0C920F0041770344182c54f37c4"
   },
   "meta": {
     "gate1RoundTrip": {
