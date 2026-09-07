@@ -1,71 +1,64 @@
 import * as dotenv from "dotenv";
+import { ethers } from "ethers";
 import { loadDeployment } from "./utils/deployments";
+import { whitelist } from "./lib/ats-client";
 
 dotenv.config();
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { Network, Security, Role } = require("@hashgraph/asset-tokenization-sdk");
-
 /**
- * Grants the "Control list Role" to the operator (if not already held) and
- * adds every protocol contract address that will hold or move GOLD-x /
- * STOCK-x to each asset's control list — the aToken contracts, the
- * StratusVault, and the demo liquidator account. This is Phase 0 Spike #3
- * made concrete, and must succeed before Phase 2/3 deploy scripts can move
- * real ATS tokens through the pool. See PLAN.md §6.2.
+ * Adds every protocol contract address that will hold or move GOLD-x /
+ * STOCK-x to each asset's control list — the basket token wrapper, the
+ * aToken contracts, StratusVault, and the demo liquidator account. This
+ * is Phase 0 Spike #4 made concrete and repeatable — see
+ * docs/phase-0-findings.md. Every one of these addresses would otherwise
+ * hit `AccountIsBlocked` the same way the admin itself did before being
+ * whitelisted in issue-assets.ts.
  *
- * Run after both `issue-assets.ts` (assets exist) and the Phase 2 pool
- * deploy (aToken addresses exist) and the Phase 3 vault deploy.
+ * Calls ATS diamond contracts directly (see tokenization/scripts/lib/ats-client.ts)
+ * rather than through @hashgraph/asset-tokenization-sdk — see
+ * docs/phase-0-findings.md Finding 1.
+ *
+ * Run after issue-assets.ts (assets exist) and whichever contract-deploy
+ * step produced the address being whitelisted. Safe to re-run — `whitelist`
+ * is a no-op if the address is already on the control list.
  */
 async function main() {
-  const operatorId = requireEnv("HEDERA_OPERATOR_ID");
+  const rpcUrl = process.env.RPC_NODE_URL ?? "https://testnet.hashio.io/api";
+  const privateKey = requireEnv("HEDERA_OPERATOR_PRIVATE_KEY"); // must hold ROLE_CONTROL_LIST on both assets
 
-  await Network.init({
-    network: "testnet",
-    mirrorNode: { name: "testnet", url: process.env.MIRROR_NODE_URL },
-    rpcNode: { name: "testnet", url: process.env.RPC_NODE_URL },
-    configuration: {
-      factories: [{ id: requireEnv("ATS_FACTORY_ID"), network: "testnet" }],
-      resolvers: [{ id: requireEnv("ATS_RESOLVER_ID"), network: "testnet" }],
-    },
-  });
-  await Network.connect({
-    account: { accountId: operatorId },
-    network: "testnet",
-    mirrorNode: { name: "testnet", url: process.env.MIRROR_NODE_URL },
-    rpcNode: { name: "testnet", url: process.env.RPC_NODE_URL },
-  });
+  const provider = new ethers.JsonRpcProvider(rpcUrl, 296, { staticNetwork: true });
+  const admin = new ethers.Wallet(privateKey, provider);
 
   const deployment = loadDeployment("hederaTestnet");
   const assetKeys = ["GoldToken", "StockIndexToken"] as const;
 
-  const protocolAddresses = [
-    { label: "aToken (Gold reserve)", envVar: "PROTOCOL_ADDRESS_ATOKEN_GOLD" },
-    { label: "aToken (Stock reserve)", envVar: "PROTOCOL_ADDRESS_ATOKEN_STOCK" },
-    { label: "StratusVault", envVar: "PROTOCOL_ADDRESS_VAULT" },
-    { label: "Demo liquidator", envVar: "PROTOCOL_ADDRESS_LIQUIDATOR_DEMO" },
+  const protocolAddresses: Array<{ label: string; source: string; address: string | undefined }> = [
+    {
+      label: "StratusBasketToken",
+      source: "deployments/hederaTestnet.json:StratusBasketToken",
+      address: deployment.contracts["StratusBasketToken"],
+    },
+    { label: "aToken (Gold reserve)", source: "env:PROTOCOL_ADDRESS_ATOKEN_GOLD", address: process.env.PROTOCOL_ADDRESS_ATOKEN_GOLD },
+    { label: "aToken (Stock reserve)", source: "env:PROTOCOL_ADDRESS_ATOKEN_STOCK", address: process.env.PROTOCOL_ADDRESS_ATOKEN_STOCK },
+    { label: "StratusVault", source: "env:PROTOCOL_ADDRESS_VAULT", address: process.env.PROTOCOL_ADDRESS_VAULT },
+    { label: "Demo liquidator", source: "env:PROTOCOL_ADDRESS_LIQUIDATOR_DEMO", address: process.env.PROTOCOL_ADDRESS_LIQUIDATOR_DEMO },
   ];
 
   for (const assetKey of assetKeys) {
-    const securityId = deployment.contracts[assetKey];
-    if (!securityId) {
+    const diamondAddress = deployment.contracts[assetKey];
+    if (!diamondAddress) {
       console.warn(`Skipping ${assetKey}: not found in deployments/hederaTestnet.json (run issue-assets.ts first)`);
       continue;
     }
 
-    console.log(`\n${assetKey} (${securityId}):`);
+    console.log(`\n${assetKey} (${diamondAddress}):`);
 
-    // Ensure the operator itself holds the Control list Role before it can
-    // call addToControlList — no-op if already granted.
-    await Role.grantRole({ securityId, targetId: operatorId, role: "CONTROL_LIST_ROLE" });
-
-    for (const { label, envVar } of protocolAddresses) {
-      const address = process.env[envVar];
+    for (const { label, source, address } of protocolAddresses) {
       if (!address) {
-        console.warn(`  Skipping ${label}: ${envVar} not set in tokenization/.env`);
+        console.warn(`  Skipping ${label}: not set yet (${source})`);
         continue;
       }
-      await Security.addToControlList({ securityId, targetId: address });
+      await whitelist(diamondAddress, admin, address);
       console.log(`  Whitelisted ${label}: ${address}`);
     }
   }
