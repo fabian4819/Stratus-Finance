@@ -166,11 +166,11 @@ Four screens, no more — **all four wired to the real testnet deployment**:
 
 ### Phase 6 — Submission (D18–D21)
 
-- [ ] `README.md`: problem, mechanism, architecture diagram, deployed addresses, how to run.
-- [ ] `docs/demo-script.md`: exact click-by-click path for the video, including the liquidation.
-- [ ] Demo video (≤ 4 min): problem → deposit/decompose → borrow → gold crash → isolated liquidation → stock leg survives.
-- [ ] Qualification checklist for the Hedera track: ATS used ✓, testnet deployed ✓, lifecycle operation demonstrated (borrow against tokenized collateral) ✓.
-- [ ] **Bonus criterion:** open at least one substantive issue or small PR upstream to ATS from real friction found in Phase 0/1 (see §8). Do this the week it happens, not on the last day.
+- [x] `README.md`: problem, mechanism, architecture diagram, deployed addresses, how to run. **Rewritten** — now a status report with the full live-deployment address table and gate-by-gate verified results (§9), not just the pre-build pitch.
+- [x] `docs/demo-script.md`: exact click-by-click path for the video, including the liquidation. **Rewritten** to match the actually-built UI and real Gate 4 results; on-chain state reset to a clean, healthy slate (`contracts/script/cleanup-demo-state.ts`) so it's ready to record from.
+- [ ] Demo video (≤ 4 min): problem → deposit/decompose → borrow → gold crash → isolated liquidation → stock leg survives. **Not yet recorded** — needs the user (screen + narration); `docs/demo-script.md` is ready.
+- [x] Qualification checklist for the Hedera track: ATS used ✓, testnet deployed ✓, lifecycle operation demonstrated (borrow against tokenized collateral) ✓. **Written** — `docs/qualification-checklist.md`.
+- [ ] **Bonus criterion:** open at least one substantive issue or small PR upstream to ATS from real friction found in Phase 0/1 (see §8). Three candidates documented in `docs/ats-friction.md`, drafted and ready — **not yet filed**, needs the user's go-ahead before posting publicly to a third-party repo.
 - [ ] Buffer day. Something will break on D20.
 
 ---
