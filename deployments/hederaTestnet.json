@@ -1,6 +1,6 @@
 {
   "network": "hederaTestnet",
-  "updatedAt": "2026-09-07T14:57:30.730Z",
+  "updatedAt": "2026-09-08T08:58:55.793Z",
   "contracts": {
     "GoldToken": "0xcF19378058EC9DFD25975527BDf7F68faeC2C7fc",
     "StockIndexToken": "0x59E3908069993cDDbD3C83479c1aFc92242c0d3A",
@@ -28,7 +28,8 @@
     "aToken_STOCK-x": "0x0C19b77B8bb49b86abbEC0f64bB5733C4CE2A03d",
     "aToken_USDC": "0xDfc07b53E8D6aA1194E2E2Ef2d352B6bA049B1a1",
     "StratusVault": "0x7F16Cd599BF2aDBBacD856263ef36eABFfeC06B2",
-    "StratusRiskView": "0x05aD00333d8bf0C920F0041770344182c54f37c4"
+    "StratusRiskView": "0x05aD00333d8bf0C920F0041770344182c54f37c4",
+    "StratusChainlinkPriceOracle": "0x784B85521B77F43655960718539E85fBa012e659"
   },
   "meta": {
     "gate1RoundTrip": {
@@ -37,16 +38,26 @@
       "redeemTx": "0xed32ada23b86bbd3f2930108ffbd17641b532d1797fc11235767e8d12e60666d"
     },
     "gate2DepositWithdraw": {
-      "description": "PLAN.md Phase 2 Gate 2, deposit/withdraw leg: deposit 100 GOLD-x directly into the raw pool, withdraw it back out, balances exact. Borrow/repay leg blocked on Pyth Hermes API access - see docs/phase-2-findings.md.",
+      "description": "PLAN.md Phase 2 Gate 2, deposit/withdraw leg: deposit 100 GOLD-x directly into the raw pool, withdraw it back out, balances exact.",
       "depositTx": "0x24622deacacc5fb1cb77f79f8fd2dca34edf7bdf9884e07f665cdeab3eee6b59",
       "withdrawTx": "0x1bf6f915f272c9974e197cd49a0d95488ac37aaf014e0bc2154c31d8b8f2308a"
     },
+    "gate2BorrowRepay": {
+      "description": "PLAN.md Phase 2 Gate 2, borrow/repay leg - full gate now passed. Unblocked by the Pyth -> Chainlink oracle pivot (see docs/phase-2-findings.md): getUserAccountData, borrow, and repay all need a live oracle price, which StratusChainlinkPriceOracle provides directly (push-based, no update step). Borrowed ~50% of available capacity against 100 GOLD-x collateral, repaid in full - USDC balance and total debt returned to exactly the pre-borrow state, health factor computed correctly throughout (2.14 mid-borrow, MAX after repay).",
+      "borrowTx": "0x5a39c3910c2e28cf474ec677c53bfb25322146d2ea10d9b4e0bbe73d583297bd",
+      "repayTx": "0x043c01d4368936ab00fbc56df439c038ef6318c7d72a15c07445bc11271bb291"
+    },
     "gate3DecomposeRecompose": {
-      "description": "PLAN.md Phase 3 Gate 3, deposit/decompose + withdraw/recompose legs: depositBasket(50) decomposes into 25 GOLD-x + 25 STOCK-x, each aToken balance increases independently (BasketDecomposed event); withdrawing both from the pool and calling recomposeBasket(50) returns exactly 50 basket tokens (BasketRecomposed event). Borrow leg still blocked on Pyth Hermes/Wormhole infrastructure - see docs/phase-2-findings.md.",
+      "description": "PLAN.md Phase 3 Gate 3, deposit/decompose + withdraw/recompose legs: depositBasket(50) decomposes into 25 GOLD-x + 25 STOCK-x, each aToken balance increases independently (BasketDecomposed event); withdrawing both from the pool and calling recomposeBasket(50) returns exactly 50 basket tokens (BasketRecomposed event). Borrow leg is mechanically identical to gate2BorrowRepay above (the vault never touches borrowing) - now unblocked the same way.",
       "depositBasketTx": "0x683360d1768aeb14750fac715e8510747a0d6d4ac30cffcf41a0965c4876fa31",
       "withdrawGoldTx": "0xe1eea2705049d71ead31c510e720f7dcb1cc41d784ab212c835d5157da8bf523",
       "withdrawStockTx": "0xb0d7a9b2e1e5086f61e171517917b21506835d634305381d6197ac2945cc29c2",
       "recomposeBasketTx": "0xea39fe30896e1ca6a837881ce16d3c94948e3de847d0835f9d79e473b81a7929"
+    },
+    "oraclePivot": {
+      "description": "Pyth (StratusPriceOracle) is blocked by infrastructure outside this repo's control - see docs/phase-2-findings.md. The pool is wired to StratusChainlinkPriceOracle instead, backed by real, live, push-based Chainlink feeds on Hedera testnet. GOLD-x -> HBAR/USD, STOCK-x -> ETH/USD (same honest substitution pattern as the original Pyth design), USDC -> USDC/USD.",
+      "oracleAddress": "0x784B85521B77F43655960718539E85fBa012e659",
+      "setPriceOracleTx": "0xe5342a3713ff9e4f2397e4fb8e4ec7524110c0b110c3ab52f27d9a2dcad9467b"
     }
   }
 }

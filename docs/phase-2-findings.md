@@ -128,15 +128,81 @@ Stratus code in the call path at all.
 infrastructure outside this repo's control, and continued attempts cost
 testnet HBAR without a clear path to resolution from our side. Move on to
 Phase 3 (`StratusVault`, which doesn't need a live oracle read to deploy
-or for its basket decomposition/recomposition logic). Retry
-`contracts/script/update-oracle-prices.ts` later — either the Hedera-side
-sync catches up, or Pyth/Hedera support can clarify. If it's still broken
-when Phase 4's liquidation demo needs a real price move, fall back to the
-`maxPriceAge` relaxation option discussed earlier (deploy a testnet-only
-oracle instance with a much larger `maxPriceAge` so cached — even if
-technically stale — prices remain readable without requiring a fresh
-Wormhole-verified push), clearly labelled as a workaround distinct from
-the production 60s design.
+or for its basket decomposition/recomposition logic).
+
+**Retried 2026-09-08, one more round before giving up:**
+- Same `InvalidWormholeVaa()` on a fresh attempt with newly-fetched update data.
+- Checked whether it's a stale-guardian-set problem specifically: read the
+  actual Wormhole core contract Hedera's Pyth receiver points at
+  (`0xb27e5ca259702f209a29225d0eDdC131039C9933`) — its
+  `getCurrentGuardianSetIndex()` returns `7`. Cross-checked against a live,
+  real VAA pulled from Wormholescan's public API — also guardian set `7`.
+  **They match** — ruling out the guardian-set-rotation theory.
+- Checked whether Hermes' "deprecated legacy" `/api/latest_vaas` endpoint
+  returns pre-Accumulator raw VAA bytes instead: it doesn't — both
+  endpoints return data prefixed with the same `PNAU` Accumulator magic
+  bytes. Hermes has fully migrated; there's no way to request the older
+  wire format anymore.
+- Checked whether Hedera's receiver is a standard EIP-1967 proxy (to find
+  and inspect its implementation contract for a version marker): its
+  `_IMPLEMENTATION_SLOT` is empty, so it's not that pattern.
+- **Conclusion:** most likely a genuine contract-version gap — Hedera
+  testnet's specific Pyth receiver deployment hasn't been upgraded to
+  parse the current Accumulator update format, independent of guardian
+  set validity. Not diagnosable further from outside (would need Pyth's
+  or Hedera's own team, or the receiver's verified source). Stopped here.
+
+## Resolution: pivoted the live oracle to Chainlink
+
+Prompted by the user asking whether another sponsor's infrastructure
+could substitute — checked, and it can, cleanly. **Chainlink has real,
+live, push-based price feeds on Hedera testnet**, confirmed via
+`reference-data-directory.vercel.app/feeds-hedera-testnet.json` and a
+direct `latestRoundData()` call showing HBAR/USD updated within the prior
+hour (ETH/USD within ~3h, BTC/USD within ~1h — all comfortably inside the
+86400s heartbeat). Because Chainlink feeds are pushed on-chain by an
+active oracle network rather than pulled on demand, there is no
+Hermes-equivalent, no API key, and no per-update fee at all — reading is
+just a view call.
+
+Available Hedera-testnet feeds (2026-09-08): HBAR, ETH, BTC, LINK, USDC,
+USDT, DAI, all vs USD, 8 decimals. No commodity/equity feed exists here
+either (mirrors the Pyth finding), so the same honest-substitution pattern
+applies: **GOLD-x → HBAR/USD**, **STOCK-x → ETH/USD** (same volatile-leg
+choice as the original Pyth design, so the "which leg is riskier" framing
+stays consistent), **USDC → USDC/USD** (real).
+
+Built `StratusChainlinkPriceOracle.sol` — same `IPriceOracleGetter`
+surface and the same demo-stress mechanism as `StratusPriceOracle`, so
+swapping the pool's live oracle was a single
+`LendingPoolAddressesProvider.setPriceOracle` call
+(`contracts/lib/bonzo/script/update-price-oracle.ts`, now parameterized by
+an `ORACLE_DEPLOYMENT_KEY` env var instead of hardcoded). Deployed at
+`0x784B85521B77F43655960718539E85fBa012e659`; feeds wired; prices read
+back successfully on the first try, no update step needed.
+
+**`StratusPriceOracle` (Pyth) stays in the codebase** — `updatePriceFeeds`
+works and is unit-tested, and it remains the originally-designed,
+documented oracle. `StratusChainlinkPriceOracle` is what the pool actually
+uses. If Pyth's Hedera testnet infrastructure gap closes, switching back
+is the same single `setPriceOracle` call in the other direction.
+
+**Immediately unblocked:** Gate 2's borrow/repay leg — run for real for
+the first time, full pass:
+
+- `getUserAccountData` — previously blocked entirely — now returns real
+  numbers ($7.98 total collateral from 100 GOLD-x @ ~$0.0798/HBAR).
+- Borrowed 2.793516 USDC (50% of available capacity), health factor
+  computed correctly as `2.14`.
+- Repaid in full — USDC balance and total debt returned to exactly the
+  pre-borrow state, health factor back to `MAX` (no debt).
+
+**Gate 2 is now fully passed** — deposit, borrow, repay, and withdraw all
+confirmed on testnet. Gate 3's borrow leg is the same underlying pool
+operation (the vault never touches borrowing), so it's unblocked
+identically. Tx hashes for all of the above in
+`deployments/hederaTestnet.json` under `meta.gate2BorrowRepay` and
+`meta.oraclePivot`.
 
 ## Budget note
 
