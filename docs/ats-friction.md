@@ -6,6 +6,10 @@ The best entry here becomes the upstream issue/PR referenced in PLAN.md §8
 (bonus criterion: "Contributions back upstream to ATS"). File it by end of
 Phase 3, not the night before the deadline.
 
+**Status:** all three entries below have been drafted as ready-to-file
+GitHub issues — see [`docs/ats-upstream-issues-draft.md`](./ats-upstream-issues-draft.md).
+Not yet posted; needs sign-off before publishing to a third-party repo.
+
 Format per entry: what we tried, what happened, what upstream could do
 better, and whether we filed anything.
 
