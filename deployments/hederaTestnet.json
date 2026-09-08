@@ -58,6 +58,24 @@
       "description": "Pyth (StratusPriceOracle) is blocked by infrastructure outside this repo's control - see docs/phase-2-findings.md. The pool is wired to StratusChainlinkPriceOracle instead, backed by real, live, push-based Chainlink feeds on Hedera testnet. GOLD-x -> HBAR/USD, STOCK-x -> ETH/USD (same honest substitution pattern as the original Pyth design), USDC -> USDC/USD.",
       "oracleAddress": "0x784B85521B77F43655960718539E85fBa012e659",
       "setPriceOracleTx": "0xe5342a3713ff9e4f2397e4fb8e4ec7524110c0b110c3ab52f27d9a2dcad9467b"
+    },
+    "gate4LiquidationPrimary": {
+      "description": "PLAN.md Phase 4 Gate 4, primary scenario: deposited value-balanced GOLD-x (~$718) and STOCK-x (~$742) directly into the pool, borrowed 90% of combined capacity, stressed GOLD-x -90% via StratusChainlinkPriceOracle.setDemoOffsetBps (DEMO-ONLY, see PLAN.md §6.3), health factor dropped to 0.65, liquidator (a distinct funded/whitelisted account, not the borrower) called liquidationCall(GOLD-x, USDC, ...) - seized all available GOLD-x collateral (it was worth less than the covered debt even with the liquidation bonus). STOCK-x aToken balance confirmed byte-for-byte unchanged (0.3 before and after).",
+      "liquidatorAddress": "0x92Eee0A486a366EEB21c229A5A9672932753E9E1",
+      "depositGoldTx": "0x412e19ef77e9697aa5e31b6b6c99e9cb45b5c22e15afeb7b93b13911ac2016f0",
+      "depositStockTx": "0x373cd26ca2574a08441765ddec9c6d414a6e9f6961575bf864aefe87f86fe727",
+      "borrowTx": "0x475296c4ffa80cec5b997289260c62ac4c3107a4afeb08a670e92fbd95de9dff",
+      "stressTx": "0xb71a4a8ee40430f73e46d8a4093d3e151096bb0d10c2920015f45a4343985b1e",
+      "liquidationTx": "0x510bee44429a8a008ffabd18dafd7903562a608d0c7dea566a8b132c3c10f2c0"
+    },
+    "gate4LiquidationMirror": {
+      "description": "PLAN.md Phase 4 Gate 4, mirror scenario (per PLAN.md: 'so the isolation claim isn't a one-asset fluke'): same mechanism, STOCK-x/ETH stressed -60% instead of GOLD-x/HBAR, liquidator seized STOCK-x only. GOLD-x aToken balance confirmed byte-for-byte unchanged (800.0 before and after).",
+      "liquidatorAddress": "0x92Eee0A486a366EEB21c229A5A9672932753E9E1",
+      "depositGoldTx": "0x59668f37c19817b0e838283073b3f0e72fea24881441edf39a43e5ae381ec649",
+      "depositStockTx": "0x0c939c784ffa4e094d11d7572e200c3c3bada4db76d275c5c56e6926c1cd2a3d",
+      "borrowTx": "0x4184794288630104c6c84ee3dfcb615cc580cdb2a9be21075402204bf027d6f5",
+      "stressTx": "0xc5b4c6dc9c60fe080de7c40613e3319690ae7248a5cfb320e5865b658ff85dd3",
+      "liquidationTx": "0xb7b50b9660ac1d6bf2631f0c34f79759bab1271a9694fac95db72c26ff66a00e"
     }
   }
 }
