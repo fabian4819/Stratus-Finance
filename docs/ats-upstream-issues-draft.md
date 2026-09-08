@@ -1,14 +1,14 @@
 # ATS upstream issue drafts
 
-Three drafts, ready to file against `hashgraph/asset-tokenization-studio`
-once approved. Source material: `docs/ats-friction.md`. Each is written as
-a standalone GitHub issue (title + body) — copy-paste into the "New
-issue" form, or use `gh issue create -R hashgraph/asset-tokenization-studio
---title "..." --body-file <(cat <<'EOF' ... EOF)` from the repo root.
+**Status: filed, 2026-09-08.** All three below are now live issues
+against `hashgraph/asset-tokenization-studio`:
 
-Repo: https://github.com/hashgraph/asset-tokenization-studio
-Suggested labels (repo's actual label set not verified — adjust to
-whatever exists): `documentation`, `sdk`.
+1. https://github.com/hashgraph/asset-tokenization-studio/issues/1397 — headless/private-key signing gap
+2. https://github.com/hashgraph/asset-tokenization-studio/issues/1398 — stale testnet Resolver/Factory addresses
+3. https://github.com/hashgraph/asset-tokenization-studio/issues/1399 — whitelist-mode issuer block, undocumented
+
+Source material: `docs/ats-friction.md`. The text below is kept as the
+original draft / source of record for what was actually posted.
 
 ---
 

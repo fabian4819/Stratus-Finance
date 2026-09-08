@@ -6,9 +6,10 @@ The best entry here becomes the upstream issue/PR referenced in PLAN.md §8
 (bonus criterion: "Contributions back upstream to ATS"). File it by end of
 Phase 3, not the night before the deadline.
 
-**Status:** all three entries below have been drafted as ready-to-file
-GitHub issues — see [`docs/ats-upstream-issues-draft.md`](./ats-upstream-issues-draft.md).
-Not yet posted; needs sign-off before publishing to a third-party repo.
+**Status:** all three entries below have been filed as GitHub issues
+against `hashgraph/asset-tokenization-studio` (2026-09-08) — see
+[`docs/ats-upstream-issues-draft.md`](./ats-upstream-issues-draft.md) for
+the source text and the links below for the live issues.
 
 Format per entry: what we tried, what happened, what upstream could do
 better, and whether we filed anything.
@@ -63,7 +64,7 @@ discovering this the way we did), or expose the same
 raw-key-signing path the SDK's own integration tests use as a real
 `SupportedWallets` option (e.g. `SupportedWallets.PRIVATE_KEY` or similar).
 
-**Filed:** not yet — candidate for the upstream contribution in PLAN.md §8.
+**Filed:** https://github.com/hashgraph/asset-tokenization-studio/issues/1397
 
 **What we did instead:** called the ATS diamond contracts directly via
 `@hashgraph/asset-tokenization-contracts`'s shipped `deployEquityFromFactory`
@@ -90,7 +91,7 @@ reality. Either link the README's example directly to the latest file in
 `deployments/hedera-testnet/`, or add a short "how to find the current
 testnet addresses" note pointing there.
 
-**Filed:** not yet — candidate for the upstream contribution in PLAN.md §8.
+**Filed:** https://github.com/hashgraph/asset-tokenization-studio/issues/1398
 
 **What we did instead:** read `packages/ats/contracts/deployments/hedera-testnet/newBlr-2026-06-12T11-19-42-198.json`
 directly for the live addresses (now in `tokenization/.env.example`).
@@ -113,7 +114,7 @@ declarations.
 prerequisite, since it's an easy first-mint failure for anyone following
 the docs literally.
 
-**Filed:** not yet — candidate for the upstream contribution in PLAN.md §8.
+**Filed:** https://github.com/hashgraph/asset-tokenization-studio/issues/1399
 
 Template:
 

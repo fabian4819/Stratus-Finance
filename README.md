@@ -98,7 +98,7 @@ User holds "Stratus ETF" basket token (50% gold-tracking token, 50% stock-index-
 ## 7. Bounty Alignment
 
 - **Primary target — Hedera: Tokenization of Anything.** Directly matches stated qualification requirements: use of Asset Tokenization Studio, testnet deployment, and a demonstrated lifecycle operation (borrowing against tokenized collateral, run for real — see §9).
-- **Upstream ATS contribution (bonus criterion):** three substantive, real friction points found integrating the ATS SDK are documented in [`docs/ats-friction.md`](./docs/ats-friction.md), ready to file as issues upstream.
+- **Upstream ATS contribution (bonus criterion):** three substantive, real friction points found integrating the ATS SDK, filed as issues against `hashgraph/asset-tokenization-studio` — [#1397](https://github.com/hashgraph/asset-tokenization-studio/issues/1397), [#1398](https://github.com/hashgraph/asset-tokenization-studio/issues/1398), [#1399](https://github.com/hashgraph/asset-tokenization-studio/issues/1399). Full writeup in [`docs/ats-friction.md`](./docs/ats-friction.md).
 - **Not chasing it, but worth noting honestly:** Chainlink is also a sponsor at this event, and this project ended up using their real, live Hedera testnet price feeds — not for bounty alignment (their specific prize tracks here are a Continuity-Track-only upgrade prize and a separate Sepolia mini-challenge, neither of which fits this submission), but because their infrastructure genuinely solved a real blocker (see [`docs/phase-2-findings.md`](./docs/phase-2-findings.md)). Mentioned for transparency, not claimed as a qualification.
 
 ## 8. Differentiation Summary

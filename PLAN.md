@@ -170,7 +170,7 @@ Four screens, no more — **all four wired to the real testnet deployment**:
 - [x] `docs/demo-script.md`: exact click-by-click path for the video, including the liquidation. **Rewritten** to match the actually-built UI and real Gate 4 results; on-chain state reset to a clean, healthy slate (`contracts/script/cleanup-demo-state.ts`) so it's ready to record from.
 - [ ] Demo video (≤ 4 min): problem → deposit/decompose → borrow → gold crash → isolated liquidation → stock leg survives. **Not yet recorded** — needs the user (screen + narration); `docs/demo-script.md` is ready.
 - [x] Qualification checklist for the Hedera track: ATS used ✓, testnet deployed ✓, lifecycle operation demonstrated (borrow against tokenized collateral) ✓. **Written** — `docs/qualification-checklist.md`.
-- [ ] **Bonus criterion:** open at least one substantive issue or small PR upstream to ATS from real friction found in Phase 0/1 (see §8). Three candidates documented in `docs/ats-friction.md`, drafted and ready — **not yet filed**, needs the user's go-ahead before posting publicly to a third-party repo.
+- [x] **Bonus criterion:** open at least one substantive issue or small PR upstream to ATS from real friction found in Phase 0/1 (see §8). **Done — three issues filed against `hashgraph/asset-tokenization-studio` on 2026-09-08:** [#1397](https://github.com/hashgraph/asset-tokenization-studio/issues/1397) (headless signing gap), [#1398](https://github.com/hashgraph/asset-tokenization-studio/issues/1398) (stale testnet addresses), [#1399](https://github.com/hashgraph/asset-tokenization-studio/issues/1399) (undocumented whitelist issuer-block).
 - [ ] Buffer day. Something will break on D20.
 
 ---

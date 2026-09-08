@@ -21,10 +21,11 @@ written.
       repay → withdraw (Gate 2), and the basket-specific
       decompose/recompose path (Gate 3) — both fully passed on-chain, tx
       hashes in `deployments/hederaTestnet.json`.
-- [ ] **Contributions back upstream to ATS (bonus).** Three real friction
-      points documented in `docs/ats-friction.md`, ready to file. Not yet
-      filed — needs the user's go-ahead to post publicly (see that file's
-      entries for exact text).
+- [x] **Contributions back upstream to ATS (bonus).** Three real friction
+      points filed as issues against `hashgraph/asset-tokenization-studio`:
+      [#1397](https://github.com/hashgraph/asset-tokenization-studio/issues/1397),
+      [#1398](https://github.com/hashgraph/asset-tokenization-studio/issues/1398),
+      [#1399](https://github.com/hashgraph/asset-tokenization-studio/issues/1399).
 
 ## What's real vs. disclosed-as-substituted, stated plainly
 
