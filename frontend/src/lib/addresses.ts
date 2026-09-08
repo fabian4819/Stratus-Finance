@@ -8,18 +8,41 @@
 export const addresses = {
   stratusBasketToken: importEnv("VITE_STRATUS_BASKET_TOKEN"),
   stratusVault: importEnv("VITE_STRATUS_VAULT"),
-  stratusPriceOracle: importEnv("VITE_STRATUS_PRICE_ORACLE"),
   stratusRiskView: importEnv("VITE_STRATUS_RISK_VIEW"),
+  // The pool is live on the Chainlink-backed oracle, not the originally
+  // designed Pyth one — see docs/phase-2-findings.md. Both addresses are
+  // kept so the UI can label the active oracle honestly if needed.
+  stratusChainlinkPriceOracle: importEnv("VITE_STRATUS_CHAINLINK_PRICE_ORACLE"),
+  stratusPriceOracle: importEnv("VITE_STRATUS_PRICE_ORACLE"),
   lendingPool: importEnv("VITE_LENDING_POOL"),
+  protocolDataProvider: importEnv("VITE_PROTOCOL_DATA_PROVIDER"),
   goldToken: importEnv("VITE_GOLD_TOKEN"),
   stockIndexToken: importEnv("VITE_STOCK_INDEX_TOKEN"),
   usdc: importEnv("VITE_USDC"),
+  aTokenGold: importEnv("VITE_ATOKEN_GOLD"),
+  aTokenStock: importEnv("VITE_ATOKEN_STOCK"),
 };
 
 function importEnv(key: string): string {
   return (import.meta.env[key] as string | undefined) ?? "";
 }
 
+// Only the addresses every screen needs at minimum — the two oracle
+// addresses are allowed to be blank since only one is actually live at a
+// time in practice.
+const REQUIRED_KEYS: (keyof typeof addresses)[] = [
+  "stratusBasketToken",
+  "stratusVault",
+  "stratusRiskView",
+  "lendingPool",
+  "protocolDataProvider",
+  "goldToken",
+  "stockIndexToken",
+  "usdc",
+  "aTokenGold",
+  "aTokenStock",
+];
+
 export function addressesConfigured(): boolean {
-  return Object.values(addresses).every((a) => a.length > 0);
+  return REQUIRED_KEYS.every((key) => addresses[key].length > 0);
 }

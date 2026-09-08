@@ -1,9 +1,16 @@
-import { BrowserProvider } from "ethers";
+import { BrowserProvider, JsonRpcProvider } from "ethers";
 
 // Hedera testnet, EVM side — see PLAN.md §2 (Technology Stack: MetaMask via
 // Hedera EVM compatibility). HashPack support is Phase 5 stretch scope.
 export const HEDERA_TESTNET_CHAIN_ID = 296;
 export const HEDERA_TESTNET_CHAIN_ID_HEX = "0x128"; // 296 in hex
+export const HEDERA_TESTNET_RPC_URL = "https://testnet.hashio.io/api";
+
+/** Read-only fallback so public data (prices, previews) is visible before
+ * a wallet is ever connected — writes still require `connectMetaMask`. */
+export const readProvider = new JsonRpcProvider(HEDERA_TESTNET_RPC_URL, HEDERA_TESTNET_CHAIN_ID, {
+  staticNetwork: true,
+});
 
 export async function connectMetaMask(): Promise<{ provider: BrowserProvider; address: string }> {
   const ethereum = (window as unknown as { ethereum?: any }).ethereum;
