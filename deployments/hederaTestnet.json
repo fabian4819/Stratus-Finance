@@ -40,6 +40,13 @@
       "description": "PLAN.md Phase 2 Gate 2, deposit/withdraw leg: deposit 100 GOLD-x directly into the raw pool, withdraw it back out, balances exact. Borrow/repay leg blocked on Pyth Hermes API access - see docs/phase-2-findings.md.",
       "depositTx": "0x24622deacacc5fb1cb77f79f8fd2dca34edf7bdf9884e07f665cdeab3eee6b59",
       "withdrawTx": "0x1bf6f915f272c9974e197cd49a0d95488ac37aaf014e0bc2154c31d8b8f2308a"
+    },
+    "gate3DecomposeRecompose": {
+      "description": "PLAN.md Phase 3 Gate 3, deposit/decompose + withdraw/recompose legs: depositBasket(50) decomposes into 25 GOLD-x + 25 STOCK-x, each aToken balance increases independently (BasketDecomposed event); withdrawing both from the pool and calling recomposeBasket(50) returns exactly 50 basket tokens (BasketRecomposed event). Borrow leg still blocked on Pyth Hermes/Wormhole infrastructure - see docs/phase-2-findings.md.",
+      "depositBasketTx": "0x683360d1768aeb14750fac715e8510747a0d6d4ac30cffcf41a0965c4876fa31",
+      "withdrawGoldTx": "0xe1eea2705049d71ead31c510e720f7dcb1cc41d784ab212c835d5157da8bf523",
+      "withdrawStockTx": "0xb0d7a9b2e1e5086f61e171517917b21506835d634305381d6197ac2945cc29c2",
+      "recomposeBasketTx": "0xea39fe30896e1ca6a837881ce16d3c94948e3de847d0835f9d79e473b81a7929"
     }
   }
 }

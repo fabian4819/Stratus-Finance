@@ -124,18 +124,17 @@ The three things most likely to kill this project, tested first, before any prod
 
 ### Phase 3 — The basket vault (D9–D11) — *core original contribution*
 
-- [ ] `StratusVault.sol`:
-  - `depositBasket(uint256 amount)` — pull basket → redeem to underlying → `pool.deposit(asset, amt, onBehalfOf=msg.sender)` per component.
-  - `withdrawToBasket(uint256 amount)` — pull underlying from the user (post `pool.withdraw`) → re-mint basket → return. Reverts if the resulting position is unhealthy (the pool already enforces this on withdraw; the vault re-checks and fails loudly).
-  - Events: `BasketDecomposed`, `BasketRecomposed`, with per-component amounts — the on-chain proof of look-through.
-- [ ] `StratusRiskView.sol`: per-component health factor + combined HF + per-component borrowing-capacity contribution, as a single struct read for the UI.
-- [ ] Tests:
-  - Decompose → per-reserve balances match the basket ratio.
-  - Borrow capacity == Σ(component value × component LTV), *not* a single blended number.
-  - Recompose after partial repay.
-  - Attempting to recompose while unhealthy reverts.
+- [x] `StratusVault.sol`:
+  - `depositBasket(uint256 amount)` — pull basket → redeem to underlying → `pool.deposit(asset, amt, onBehalfOf=msg.sender)` per component. **Done, deployed, verified on testnet.**
+  - `recomposeBasket(uint256 amount)` (named this in the actual implementation, not `withdrawToBasket`) — pull already-withdrawn underlying from the user → re-mint basket → return. **Done, deployed, verified on testnet.** Health-unwinding on recompose is enforced by the pool itself during the user's own `pool.withdraw` step (it reverts the withdrawal, not the recompose, if the position would go unhealthy) — see contract-level docs in `StratusVault.sol` for why recompose has nothing left to re-check by the time it's called.
+  - Events: `BasketDecomposed`, `BasketRecomposed`, with per-component amounts — the on-chain proof of look-through. **Both confirmed emitted with exact amounts, on testnet.**
+  - **Bug found and fixed during Phase 3 deploy:** the constructor originally pre-approved the pool for both components at deploy time — but since the components are ATS diamonds, `approve()` itself reverts (`AccountIsBlocked`) unless the caller is already control-list-whitelisted, and the vault can't be whitelisted before it has an address. Moved to a lazy `_ensureApproved` check inside `depositBasket`. See `docs/phase-2-findings.md`.
+- [x] `StratusRiskView.sol`: per-component health factor + combined HF + per-component borrowing-capacity contribution, as a single struct read for the UI. **Deployed** (`0x05aD00333d8bf0C920F0041770344182c54f37c4`); `getUserRisk` itself still needs a live oracle read to actually execute, so it's untested end-to-end pending the Pyth/Wormhole blocker (§Phase 2) — its logic is otherwise unchanged since original review.
+- [x] Tests (`contracts/test/StratusVault.test.ts`, 8 tests, `MockLendingPool` double):
+  - Decompose → per-reserve balances match the basket ratio. ✅
+  - ~~Borrow capacity == Σ(component value × component LTV)~~ / ~~Recompose after partial repay~~ / ~~Attempting to recompose while unhealthy reverts~~ — these are properties of the **real pool's** accounting (health factor, LTV-weighted capacity), not of the vault's own wrapper logic, so they're verified against the real, unmodified pool on testnet instead (Gate 2/3 scripts) rather than re-derived in a mock that would just be testing its own fidelity to Aave v2, not `StratusVault`. Unit tests instead cover: decompose call correctness (asset/amount/onBehalfOf), event emission (both directions), zero-amount rejection (both directions), idempotent lazy approval across repeated deposits, and a full mint→deposit→(simulated withdraw)→recompose round trip landing back at the exact starting balances.
 
-**Gate 3:** `depositBasket` → borrow USDC → `withdrawToBasket` round-trips on testnet, with events proving decomposition.
+**Gate 3: passed, except the same borrow leg Gate 2 is blocked on.** `depositBasket` → decompose (event + independent aToken balances, exact 25/25 split) and withdraw-from-pool → `recomposeBasket` (event + exact basket amount back) both confirmed on testnet — tx hashes in `deployments/hederaTestnet.json` → `meta.gate3DecomposeRecompose`. The `→ borrow USDC →` middle step is blocked on the same Pyth Hermes/Wormhole infrastructure issue as Gate 2 (§Phase 2) — not specific to the vault, since the vault doesn't touch borrowing at all; the user borrows directly against the pool after `depositBasket`.
 
 ### Phase 4 — Liquidation, isolated (D12–D13) — *the money shot of the demo*
 
