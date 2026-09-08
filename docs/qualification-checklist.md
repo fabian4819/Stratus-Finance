@@ -27,6 +27,19 @@ written.
       [#1398](https://github.com/hashgraph/asset-tokenization-studio/issues/1398),
       [#1399](https://github.com/hashgraph/asset-tokenization-studio/issues/1399).
 
+## Secondary track — Open Source: Improve the Hedera Harness ($2,000)
+
+- [x] **Genuine rough edge, fixed for real, contributed upstream.** The
+      tinybar/wei native-currency precision bug hit and fixed in
+      `StratusPriceOracle` (see `docs/phase-2-findings.md`) is now a Tier 0-1
+      deterministic check in `hedera-dev/hedera-harness`, plus documented
+      directly in its generator/repair prompts' Hard Constraints, so
+      agent-generated Hedera contracts get the same guardrail:
+      [PR #45](https://github.com/hedera-dev/hedera-harness/pull/45).
+      Includes 4 new unit tests (fixtures modeled on the real before/after
+      code) and a full local pass of the harness's own test suite
+      (175/175) and typecheck before opening the PR.
+
 ## What's real vs. disclosed-as-substituted, stated plainly
 
 - Lending core: real, unmodified Bonzo/Aave v2 fork, deployed through the
