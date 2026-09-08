@@ -76,6 +76,11 @@
       "borrowTx": "0x4184794288630104c6c84ee3dfcb615cc580cdb2a9be21075402204bf027d6f5",
       "stressTx": "0xc5b4c6dc9c60fe080de7c40613e3319690ae7248a5cfb320e5865b658ff85dd3",
       "liquidationTx": "0xb7b50b9660ac1d6bf2631f0c34f79759bab1271a9694fac95db72c26ff66a00e"
+    },
+    "demoStateCleanup": {
+      "description": "Reset to a clean slate after the Gate 4 mirror run (contracts/script/cleanup-demo-state.ts) - neither liquidation demo script cleans up after itself on purpose. Repaid all outstanding debt and cleared STOCK-x's leftover demo stress, so the deployment is ready to re-record from a healthy state (collateral $267.09, debt $0, health factor MAX).",
+      "repayTx": "0x7895429ab8d4e475aa92e493b8ed3e25efbb38acb27d0361e781bde1eff9dadd",
+      "clearStockStressTx": "0x6952ca35262ce25f1d73392067fca02cc11ebb354523210310d858ff5b1830bf"
     }
   }
 }
