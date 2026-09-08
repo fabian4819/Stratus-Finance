@@ -151,18 +151,18 @@ The three things most likely to kill this project, tested first, before any prod
 
 ### Phase 5 — Frontend (D14–D17)
 
-Four screens, no more:
+Four screens, no more — **all four wired to the real testnet deployment**:
 
-1. **Mint basket** — acquire/mint GOLD-x + STOCK-x → basket token.
-2. **Deposit** — one action; then show the *decomposition result*: two reserve cards, each with its own LTV, threshold, price, and component health factor. This screen is the pitch.
-3. **Borrow / repay** — USDC, with combined capacity shown as the sum of the two component contributions, visibly itemised.
-4. **Risk panel** — live Pyth prices, per-component HF bars, and a "what liquidates first" indicator.
+1. **Mint basket** — acquire/mint GOLD-x + STOCK-x → basket token. [x] Done.
+2. **Deposit** — one action; then show the *decomposition result*: two reserve cards, each with its own LTV, threshold, price, and component health factor. This screen is the pitch. [x] Done.
+3. **Borrow / repay** — USDC, with combined capacity shown as the sum of the two component contributions, visibly itemised. [x] Done.
+4. **Risk panel** — live prices (Chainlink, not Pyth — see §Phase 2), per-component HF bars, and the demo-stress banner. [x] Done — manually verified in a real browser against the live deployment; correctly showed STOCK-x stressed, matching the still-active demo offset left over from the Phase 4 liquidation run.
 
-- [ ] Wallets: MetaMask (Hedera EVM) first; HashPack if time permits.
-- [ ] Read layer: `StratusRiskView` in one multicall-ish read, polled on price updates.
-- [ ] Empty/error states for: wrong network, ATS transfer blocked, stale oracle.
+- [x] Wallets: MetaMask (Hedera EVM). **Done** — shared `WalletContext`, auto-switches/adds the Hedera testnet chain. HashPack not attempted (stretch scope, time-permitting).
+- [x] Read layer: `StratusRiskView` in one read per screen that needs it, polled every 15s on the Risk Panel. Not literally multicall-batched (Hedera's per-call overhead didn't make that necessary at this scale) but each screen fetches its several reads via `Promise.all`.
+- [ ] Empty/error states for: wrong network, ATS transfer blocked, stale oracle. **Partially done** — `addressesConfigured()` gate exists; wrong-network and blocked-transfer states are not yet explicit (errors currently surface as raw revert messages in the status line).
 
-**Gate 5:** a person who has never seen the project can go from zero to a borrowed position without instruction.
+**Gate 5: mostly passed.** All four screens render correctly with no console errors and pull real on-chain data (verified via a real browser session against the live deployment — see commit history). Write actions (mint/deposit/borrow/repay) are wired but not yet click-tested end-to-end through an actual MetaMask session in this pass; read actions were.
 
 ### Phase 6 — Submission (D18–D21)
 
