@@ -204,6 +204,41 @@ identically. Tx hashes for all of the above in
 `deployments/hederaTestnet.json` under `meta.gate2BorrowRepay` and
 `meta.oraclePivot`.
 
+## Post-pivot: transient HashIO underflow on `getAssetPrice()`
+
+While validating the redeployed `StratusRiskView` (§ see
+`deployments/hederaTestnet.json` meta.riskViewOracleFix — it was still
+pointed at the dead Pyth oracle after the pivot above; fixed separately),
+the frontend hit an unreadable `missing revert data` error on
+`getUserRisk()`. Decoding the raw `eth_call` response (bypassing ethers'
+wrapping) showed it was a real `Panic(uint256)` with code `0x11`
+(arithmetic overflow/underflow) — not the stale-oracle bug, and not a
+propagation-lag "contract not indexed yet" issue either (that was our
+first, wrong guess; ruled out once the panic code was actually decoded).
+
+Root cause: `StratusChainlinkPriceOracle.getAssetPrice()` does
+`block.timestamp - updatedAt` directly inside a `require(...)`, with no
+`unchecked` guard. Hedera's JSON-RPC relay (HashIO) load-balances `eth_call`
+across multiple backend nodes; if the node that happens to serve a given
+request has a `latest` block whose timestamp is a few seconds behind
+Chainlink's `updatedAt` for that feed (which reflects real wall-clock time
+independent of which mirror-node replica is answering), the subtraction
+underflows on Solidity 0.8's checked arithmetic and reverts with `Panic(0x11)`
+instead of a readable `require` message.
+
+Confirmed transient by retrying: the identical call (same block-latest
+`eth_call`, same calldata) failed once, then succeeded 8/8 times across
+both a raw JSON-RPC `eth_call` and a normal ethers contract call within
+the next minute, once the lagging replica's view caught up. Not a code
+bug in the sense of wrong output — the contract's assumption
+(`block.timestamp >= updatedAt` always holds) is reasonable for a single
+consistent node but not guaranteed across a load-balanced RPC's replicas
+on a chain this fresh. Left as-is rather than wrapping in `unchecked` or
+clamping to zero, since surfacing a hard failure on inconsistent relay
+state is arguably more honest than silently reporting a wrong "stale
+price: false". Documented here so a future flaky repro during demo
+recording isn't mistaken for a real regression — retry once.
+
 ## Budget note
 
 Testnet HBAR balance dropped from 65.6 → ~5.0 over Phase 2 (the full
