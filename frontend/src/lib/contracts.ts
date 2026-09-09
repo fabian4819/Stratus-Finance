@@ -8,6 +8,7 @@ import {
   PROTOCOL_DATA_PROVIDER_ABI,
   RISK_VIEW_ABI,
   ORACLE_ABI,
+  MARKETPLACE_ABI,
 } from "./abis";
 
 export function getErc20(address: string, runner: ContractRunner) {
@@ -52,4 +53,9 @@ export function getStockToken(runner: ContractRunner) {
 
 export function getUsdc(runner: ContractRunner) {
   return getErc20(addresses.usdc, runner);
+}
+
+/** Self-serve "buy tokenized assets with USDC" — see StratusMarketplace.sol. */
+export function getMarketplace(runner: ContractRunner) {
+  return new Contract(addresses.stratusMarketplace, MARKETPLACE_ABI, runner);
 }

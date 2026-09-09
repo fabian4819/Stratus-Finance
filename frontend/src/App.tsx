@@ -1,6 +1,7 @@
 import { NavLink, Route, Routes } from "react-router-dom";
 import { WalletProvider } from "./lib/WalletContext";
 import { WalletConnectButton } from "./components/WalletConnectButton";
+import { Buy } from "./pages/Buy";
 import { MintBasket } from "./pages/MintBasket";
 import { Deposit } from "./pages/Deposit";
 import { BorrowRepay } from "./pages/BorrowRepay";
@@ -8,6 +9,7 @@ import { RiskPanel } from "./pages/RiskPanel";
 import { IndividualStocks } from "./pages/IndividualStocks";
 
 const NAV_ITEMS = [
+  { to: "/buy", label: "Buy" },
   { to: "/mint", label: "Mint Basket" },
   { to: "/deposit", label: "Deposit" },
   { to: "/borrow", label: "Borrow / Repay" },
@@ -41,7 +43,8 @@ export default function App() {
 
         <main>
           <Routes>
-            <Route path="/" element={<MintBasket />} />
+            <Route path="/" element={<Buy />} />
+            <Route path="/buy" element={<Buy />} />
             <Route path="/mint" element={<MintBasket />} />
             <Route path="/deposit" element={<Deposit />} />
             <Route path="/borrow" element={<BorrowRepay />} />

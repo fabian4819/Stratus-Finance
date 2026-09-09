@@ -26,6 +26,8 @@ export const addresses = {
   usdc: importEnv("VITE_USDC"),
   aTokenGold: importEnv("VITE_ATOKEN_GOLD"),
   aTokenStock: importEnv("VITE_ATOKEN_STOCK"),
+  // Self-serve "buy tokenized assets with USDC" — see StratusMarketplace.sol
+  stratusMarketplace: importEnv("VITE_STRATUS_MARKETPLACE"),
 };
 
 function importEnv(key: string): string {

@@ -56,3 +56,9 @@ export const ORACLE_ABI = [
   "function isDemoStressed(address asset) view returns (bool)",
   "function demoOffsetBps(address asset) view returns (int256)",
 ];
+
+export const MARKETPLACE_ABI = [
+  "function quote(address token, uint256 tokenAmount) view returns (uint256 usdcCost)",
+  "function buy(address token, uint256 tokenAmount)",
+  "function sellable(address token) view returns (bool)",
+];
