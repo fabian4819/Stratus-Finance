@@ -1,6 +1,6 @@
 {
   "network": "hederaTestnet",
-  "updatedAt": "2026-09-08T08:58:55.793Z",
+  "updatedAt": "2026-09-09T04:35:19.758Z",
   "contracts": {
     "GoldToken": "0xcF19378058EC9DFD25975527BDf7F68faeC2C7fc",
     "StockIndexToken": "0x59E3908069993cDDbD3C83479c1aFc92242c0d3A",
@@ -28,7 +28,7 @@
     "aToken_STOCK-x": "0x0C19b77B8bb49b86abbEC0f64bB5733C4CE2A03d",
     "aToken_USDC": "0xDfc07b53E8D6aA1194E2E2Ef2d352B6bA049B1a1",
     "StratusVault": "0x7F16Cd599BF2aDBBacD856263ef36eABFfeC06B2",
-    "StratusRiskView": "0x05aD00333d8bf0C920F0041770344182c54f37c4",
+    "StratusRiskView": "0xB870E71174Dd5D6775B58AD5824140470B6A13De",
     "StratusChainlinkPriceOracle": "0x784B85521B77F43655960718539E85fBa012e659"
   },
   "meta": {
@@ -81,6 +81,11 @@
       "description": "Reset to a clean slate after the Gate 4 mirror run (contracts/script/cleanup-demo-state.ts) - neither liquidation demo script cleans up after itself on purpose. Repaid all outstanding debt and cleared STOCK-x's leftover demo stress, so the deployment is ready to re-record from a healthy state (collateral $267.09, debt $0, health factor MAX).",
       "repayTx": "0x7895429ab8d4e475aa92e493b8ed3e25efbb38acb27d0361e781bde1eff9dadd",
       "clearStockStressTx": "0x6952ca35262ce25f1d73392067fca02cc11ebb354523210310d858ff5b1830bf"
+    },
+    "riskViewOracleFix": {
+      "description": "StratusRiskView's `oracle` is immutable and was still pointed at the dead Pyth-backed StratusPriceOracle from before the oraclePivot (see that meta entry) - the pool itself moved to Chainlink, but RiskView's own getAssetPrice() call kept hitting Pyth and reverting with StalePrice() (selector 0x19abf40e), surfaced in the frontend as an unreadable 'unknown custom error' on every Deposit/Risk Panel page load. Redeployed StratusRiskView (read-only, no state) against StratusChainlinkPriceOracle via contracts/script/redeploy-risk-view.ts; getUserRisk() now succeeds on-chain with no revert. Old, broken address was 0x05aD00333d8bf0C920F0041770344182c54f37c4.",
+      "oldAddress": "0x05aD00333d8bf0C920F0041770344182c54f37c4",
+      "newAddress": "0xB870E71174Dd5D6775B58AD5824140470B6A13De"
     }
   }
 }
