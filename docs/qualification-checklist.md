@@ -61,6 +61,13 @@ written.
 - Liquidation stress mechanism: an owner-gated, event-logged demo offset
   (`setDemoOffsetBps`) — disclosed via a persistent UI banner whenever
   active, not a silent price manipulation.
+- Individual stocks: 10 additional real-stock reserves (Apple, Tesla,
+  Microsoft, Nvidia, Alphabet, Amazon, Meta, Berkshire Hathaway, AMD,
+  Palantir), each its own ATS token + pool reserve, deposited/borrowed
+  directly at `/stocks` — not folded into the basket. An 11th candidate
+  meant to be Chevron was caught and dropped after its RedStone price
+  turned out to be an unrelated crypto token — see
+  `docs/phase-4-individual-stocks.md`.
 
 ## Evidence trail
 

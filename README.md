@@ -78,7 +78,7 @@ User holds "Stratus ETF" basket token (50% gold-tracking token, 50% stock-index-
 | Layer | Technology | Role |
 |---|---|---|
 | RWA tokenization | Hedera Asset Tokenization Studio (ATS) | Real, compliant ERC-1400-style diamond tokens for GOLD-x and STOCK-x, issued directly via `@hashgraph/asset-tokenization-contracts` — see §6 |
-| Price feeds (live) | **RedStone** (real, signed pull-oracle feeds, verified on-chain via `PrimaryProdDataServiceConsumerBase`) | GOLD-x tracks real gold spot (`XAU`), STOCK-x tracks the real S&P 500 index (`USA500.Y`) — not substitutes — see §6 and [`docs/phase-3-oracle-research.md`](./docs/phase-3-oracle-research.md) |
+| Price feeds (live) | **RedStone** (real, signed pull-oracle feeds, verified on-chain via `PrimaryProdDataServiceConsumerBase`) | GOLD-x tracks real gold spot (`XAU`), STOCK-x tracks the real S&P 500 index (`USA500.Y`), plus 10 individual real-stock reserves (Apple, Tesla, Microsoft, Nvidia, Alphabet, Amazon, Meta, Berkshire Hathaway, AMD, Palantir) — not substitutes — see §6, [`docs/phase-3-oracle-research.md`](./docs/phase-3-oracle-research.md), and [`docs/phase-4-individual-stocks.md`](./docs/phase-4-individual-stocks.md) |
 | Price feeds (also live, alternate) | Chainlink (real, push-based feeds on Hedera testnet) | HBAR/USD and ETH/USD — kept in the codebase as a working alternate oracle, one `setPriceOracle` call away |
 | Price feeds (as designed) | Pyth Network | Originally designed oracle — fully implemented and unit-tested (`updatePriceFeeds`, staleness checks) but blocked by Pyth/Hedera infrastructure outside this repo's control; kept in the codebase — see [`docs/phase-2-findings.md`](./docs/phase-2-findings.md) |
 | Lending core + liquidation engine | Forked `bonzo-finance-contracts` (Aave v2 fork, open source) | Real, unmodified, deployed through the standard upgradeable-proxy flow — health factor, interest accrual, and `liquidationCall` are Aave v2's own audited logic, not reimplemented |
@@ -127,6 +127,8 @@ All addresses on **Hedera testnet** (chain id 296) — full record with every tr
 | StratusPriceOracle (Pyth, as designed) | [`0xB590789A6cC576ED8C14A3E846c16b9f9a4Cc681`](https://hashscan.io/testnet/contract/0xB590789A6cC576ED8C14A3E846c16b9f9a4Cc681) |
 | LendingPool (Bonzo/Aave v2 fork) | [`0x36f251a19372c550cc3784E108391eeC004B903E`](https://hashscan.io/testnet/contract/0x36f251a19372c550cc3784E108391eeC004B903E) |
 
+Plus **10 individual real-stock reserves** (Apple, Tesla, Microsoft, Nvidia, Alphabet, Amazon, Meta, Berkshire Hathaway, AMD, Palantir) — each its own ATS token, pool reserve, and live RedStone price feed, deposited/borrowed directly at `/stocks`. Full address table and a real ticker-collision catch-and-fix (an 11th candidate, meant to be Chevron, turned out to be an unrelated crypto token — caught by sanity-checking prices, not just symbols) in [`docs/phase-4-individual-stocks.md`](./docs/phase-4-individual-stocks.md).
+
 ### What's been proven, on-chain, for real
 
 | Gate | Result |
@@ -136,6 +138,7 @@ All addresses on **Hedera testnet** (chain id 296) — full record with every tr
 | **Gate 3** — basket deposit/decompose + withdraw/recompose | ✅ Passed, fully |
 | **Gate 4** — isolated liquidation, both directions | ✅ Passed — gold-crashes and stock-crashes scenarios both run for real, untouched-leg invariant held exactly both times |
 | **Gate 5** — frontend wired and reading live data | ✅ Verified in a real browser session against this deployment |
+| **Individual stocks** — deposit/withdraw on a newly-added reserve | ✅ Passed — AAPL-x, balances restored exactly; see `docs/phase-4-individual-stocks.md` |
 
 Full phase-by-phase build log, every architectural decision, and every blocker encountered (including the ones that didn't work) are in [`PLAN.md`](./PLAN.md) and the `docs/phase-*-findings.md` files — written as they happened, not cleaned up after the fact.
 
