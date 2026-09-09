@@ -111,11 +111,11 @@ export function BorrowRepay() {
         <>
           <div className="rounded-lg border border-slate-200 p-4 mb-4 text-sm">
             <div className="flex justify-between mb-1">
-              <span className="text-slate-500">From GOLD-x leg</span>
+              <span className="text-slate-500">From Gold leg</span>
               <span>{componentCapacity ? `$${Number(formatEther(componentCapacity.gold)).toFixed(2)}` : "—"} collateral</span>
             </div>
             <div className="flex justify-between mb-1">
-              <span className="text-slate-500">From STOCK-x leg</span>
+              <span className="text-slate-500">From S&amp;P 500 Index leg</span>
               <span>{componentCapacity ? `$${Number(formatEther(componentCapacity.stock)).toFixed(2)}` : "—"} collateral</span>
             </div>
             <div className="flex justify-between font-medium border-t border-slate-200 pt-1 mt-1">

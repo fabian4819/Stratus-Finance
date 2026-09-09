@@ -82,7 +82,7 @@ export function Deposit() {
 
   if (!addressesConfigured()) return <NotConfiguredNotice />;
 
-  const labels = ["GOLD-x reserve", "STOCK-x reserve"];
+  const labels = ["Gold reserve", "S&P 500 Index reserve"];
 
   return (
     <div className="max-w-3xl mx-auto p-6">

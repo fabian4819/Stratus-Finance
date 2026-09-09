@@ -39,8 +39,8 @@ export function RiskPanel() {
     setPrices({ gold: goldPrice, stock: stockPrice, usdc: usdcPrice });
 
     const stressed: string[] = [];
-    if (goldStressed) stressed.push("GOLD-x");
-    if (stockStressed) stressed.push("STOCK-x");
+    if (goldStressed) stressed.push("Gold");
+    if (stockStressed) stressed.push("S&P 500 Index");
     setStressedAssets(stressed);
 
     if (address) {
@@ -78,11 +78,11 @@ export function RiskPanel() {
 
         <div className="rounded-lg border border-slate-200 p-4 mb-4 text-sm space-y-1">
           <div className="flex justify-between">
-            <span className="text-slate-500">GOLD-x price (XAU/USD — real gold)</span>
+            <span className="text-slate-500">Gold price (XAU/USD)</span>
             <span>{prices ? `$${Number(formatEther(prices.gold)).toFixed(2)}` : "—"}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-slate-500">STOCK-x price (S&amp;P 500 index — real)</span>
+            <span className="text-slate-500">S&amp;P 500 Index price</span>
             <span>{prices ? `$${Number(formatEther(prices.stock)).toFixed(2)}` : "—"}</span>
           </div>
           <div className="flex justify-between">
@@ -103,8 +103,8 @@ export function RiskPanel() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <HealthBar label="GOLD-x leg" component={risk?.components[0]} />
-          <HealthBar label="STOCK-x leg" component={risk?.components[1]} />
+          <HealthBar label="Gold leg" component={risk?.components[0]} />
+          <HealthBar label="S&P 500 Index leg" component={risk?.components[1]} />
         </div>
       </div>
     </div>

@@ -60,9 +60,9 @@ export function MintBasket() {
       const basketAmount = parseEther(amount);
       const [amountA, amountB] = await basket.previewComponents(basketAmount);
 
-      setStatus("Approving GOLD-x...");
+      setStatus("Approving Gold...");
       await (await gold.approve(basketAddress, amountA)).wait();
-      setStatus("Approving STOCK-x...");
+      setStatus("Approving S&P 500 Index...");
       await (await stock.approve(basketAddress, amountB)).wait();
       setStatus("Minting basket tokens...");
       const tx = await basket.mint(basketAmount);
@@ -82,7 +82,7 @@ export function MintBasket() {
     <div className="max-w-lg mx-auto p-6">
       <h1 className="text-xl font-semibold mb-4">Mint Stratus ETF</h1>
       <p className="text-sm text-slate-600 mb-6">
-        Mint GOLD-x and STOCK-x (50/50 by token count) into one Stratus ETF basket token.
+        Mint Gold and S&amp;P 500 Index (50/50 by token count) into one Stratus ETF basket token.
       </p>
 
       {!address ? (
@@ -93,11 +93,11 @@ export function MintBasket() {
         <>
           <div className="rounded-lg border border-slate-200 p-4 mb-4 text-sm space-y-1">
             <div className="flex justify-between">
-              <span className="text-slate-500">GOLD-x balance</span>
+              <span className="text-slate-500">Gold balance</span>
               <span>{balances ? formatEther(balances.gold) : "—"}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-500">STOCK-x balance</span>
+              <span className="text-slate-500">S&amp;P 500 Index balance</span>
               <span>{balances ? formatEther(balances.stock) : "—"}</span>
             </div>
             <div className="flex justify-between font-medium border-t border-slate-200 pt-1 mt-1">
@@ -116,7 +116,7 @@ export function MintBasket() {
           />
           {preview && (
             <p className="text-xs text-slate-500 mb-4">
-              Requires {formatEther(preview.amountA)} GOLD-x + {formatEther(preview.amountB)} STOCK-x
+              Requires {formatEther(preview.amountA)} Gold + {formatEther(preview.amountB)} S&amp;P 500 Index
             </p>
           )}
 
