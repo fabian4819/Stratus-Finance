@@ -8,7 +8,13 @@ import { saveContractAddress, requireContractAddress } from "./utils/deployments
 async function main() {
   const basketTokenAddress = requireContractAddress(network.name, "StratusBasketToken");
   const poolAddress = requireContractAddress(network.name, "LendingPool"); // written by Phase 2 deploy
-  const oracleAddress = requireContractAddress(network.name, "StratusPriceOracle");
+  // Live oracle for StratusRiskView's immutable `oracle` reference — see
+  // script/redeploy-risk-view.ts for why this must not be the Pyth-backed
+  // StratusPriceOracle (blocked; see docs/phase-2-findings.md).
+  const oracleAddress = requireContractAddress(
+    network.name,
+    process.env.ORACLE_DEPLOYMENT_KEY ?? "StratusChainlinkPriceOracle"
+  );
   const dataProviderAddress = requireContractAddress(network.name, "ProtocolDataProvider"); // written by Phase 2 deploy
 
   const StratusVault = await ethers.getContractFactory("StratusVault");
