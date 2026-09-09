@@ -1,5 +1,5 @@
 {
-  "comment": "Individual real-stock reserves, added alongside (not replacing) the original GOLD-x/STOCK-x basket — see docs/phase-4-individual-stocks.md. Each is deposited/borrowed against directly in the pool, not wrapped by StratusBasketToken. All 11 tickers below were confirmed live against RedStone's redstone-primary-prod data service by cross-checking a broad list of major US equities against the raw catalog response — these are every recognizable major-name match found, not an arbitrary subset (docs/phase-3-oracle-research.md / docs/phase-4-individual-stocks.md). isinPrefix11 follows the same pattern as tokenization/config/assets.json — checksum computed at runtime.",
+  "comment": "Individual real-stock reserves, added alongside (not replacing) the original GOLD-x/STOCK-x basket — see docs/phase-4-individual-stocks.md. Each is deposited/borrowed against directly in the pool, not wrapped by StratusBasketToken. All 10 tickers below were confirmed live against RedStone's redstone-primary-prod data service AND sanity-checked against their actual returned price value, not just ticker-name existence. isinPrefix11 follows the same pattern as tokenization/config/assets.json — checksum computed at runtime. NOTE: an 11th candidate, CVX, was dropped after its price ($2.21) turned out to be Convex Finance's crypto token, not Chevron stock — a real ticker collision caught by sanity-checking the value, not assumed from the symbol matching. Chevron-specific token/reserve/whitelist infra was already deployed on-chain before this was caught (CvxToken in deployments/hederaTestnet.json) and is left in place, unused and unlabeled as Chevron anywhere — see docs/phase-4-individual-stocks.md.",
   "assets": [
     {
       "key": "AaplToken",
@@ -80,16 +80,6 @@
       "numberOfShares": "1000000",
       "decimals": 18,
       "redstoneFeedId": "BRKB"
-    },
-    {
-      "key": "CvxToken",
-      "name": "Stratus Chevron Tracker",
-      "symbol": "CVX-x",
-      "isinPrefix11": "USSTRATUSCV",
-      "currency": "USD",
-      "numberOfShares": "1000000",
-      "decimals": 18,
-      "redstoneFeedId": "CVX"
     },
     {
       "key": "AmdToken",
