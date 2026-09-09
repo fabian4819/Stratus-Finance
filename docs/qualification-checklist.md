@@ -68,6 +68,13 @@ written.
   meant to be Chevron was caught and dropped after its RedStone price
   turned out to be an unrelated crypto token — see
   `docs/phase-4-individual-stocks.md`.
+- Buy + borrow selection: `StratusMarketplace` (`/buy`) lets any wallet
+  buy tokenized assets with USDC, auto-whitelisted on the ATS control
+  list in the same transaction — verified with a wallet confirmed never
+  whitelisted before. 20 top-market-cap crypto reserves (real RedStone
+  prices, real pool liquidity) are borrowable alongside USDC at
+  `/borrow` — verified with a real borrow/repay. See
+  `docs/phase-5-crypto-borrow.md`.
 
 ## Evidence trail
 

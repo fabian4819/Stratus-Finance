@@ -129,6 +129,8 @@ All addresses on **Hedera testnet** (chain id 296) — full record with every tr
 
 Plus **10 individual real-stock reserves** (Apple, Tesla, Microsoft, Nvidia, Alphabet, Amazon, Meta, Berkshire Hathaway, AMD, Palantir) — each its own ATS token, pool reserve, and live RedStone price feed, deposited/borrowed directly at `/stocks`. Full address table and a real ticker-collision catch-and-fix (an 11th candidate, meant to be Chevron, turned out to be an unrelated crypto token — caught by sanity-checking prices, not just symbols) in [`docs/phase-4-individual-stocks.md`](./docs/phase-4-individual-stocks.md).
 
+Plus **StratusMarketplace** (`/buy`) — any wallet buys Gold/S&P 500 Index/individual stocks directly with USDC, auto-whitelisted on the ATS control list as part of the same transaction, no admin step — and **20 top-market-cap crypto reserves** (BTC, ETH, USDT, XRP, BNB, SOL, DOGE, ADA, TRX, AVAX, SHIB, LINK, DOT, BCH, TON, SUI, NEAR, LTC, ICP, UNI) borrowable alongside USDC at `/borrow`. Both verified end-to-end with real transactions — see [`docs/phase-5-crypto-borrow.md`](./docs/phase-5-crypto-borrow.md).
+
 ### What's been proven, on-chain, for real
 
 | Gate | Result |
