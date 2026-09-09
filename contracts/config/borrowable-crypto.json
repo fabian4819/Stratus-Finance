@@ -1,0 +1,25 @@
+{
+  "comment": "Top-20-by-market-cap crypto tokens (excluding USDC, already borrowable) added as additional borrow-enabled pool reserves — see docs/phase-5-crypto-borrow.md. Each is a MockCrypto (plain mintable 18-decimal ERC20, not ATS-issued, not RWA) priced by a real RedStone feed. Order matches market-cap ranking at integration time, not alphabetical.",
+  "assets": [
+    { "key": "BtcToken", "symbol": "BTC", "name": "Mock Bitcoin", "redstoneFeedId": "BTC" },
+    { "key": "EthToken", "symbol": "ETH", "name": "Mock Ethereum", "redstoneFeedId": "ETH" },
+    { "key": "UsdtToken", "symbol": "USDT", "name": "Mock Tether", "redstoneFeedId": "USDT" },
+    { "key": "XrpToken", "symbol": "XRP", "name": "Mock XRP", "redstoneFeedId": "XRP" },
+    { "key": "BnbToken", "symbol": "BNB", "name": "Mock BNB", "redstoneFeedId": "BNB" },
+    { "key": "SolToken", "symbol": "SOL", "name": "Mock Solana", "redstoneFeedId": "SOL" },
+    { "key": "DogeToken", "symbol": "DOGE", "name": "Mock Dogecoin", "redstoneFeedId": "DOGE" },
+    { "key": "AdaToken", "symbol": "ADA", "name": "Mock Cardano", "redstoneFeedId": "ADA" },
+    { "key": "TrxToken", "symbol": "TRX", "name": "Mock Tron", "redstoneFeedId": "TRX" },
+    { "key": "AvaxToken", "symbol": "AVAX", "name": "Mock Avalanche", "redstoneFeedId": "AVAX" },
+    { "key": "ShibToken", "symbol": "SHIB", "name": "Mock Shiba Inu", "redstoneFeedId": "SHIB" },
+    { "key": "LinkToken", "symbol": "LINK", "name": "Mock Chainlink", "redstoneFeedId": "LINK" },
+    { "key": "DotToken", "symbol": "DOT", "name": "Mock Polkadot", "redstoneFeedId": "DOT" },
+    { "key": "BchToken", "symbol": "BCH", "name": "Mock Bitcoin Cash", "redstoneFeedId": "BCH" },
+    { "key": "TonToken", "symbol": "TON", "name": "Mock Toncoin", "redstoneFeedId": "TON" },
+    { "key": "SuiToken", "symbol": "SUI", "name": "Mock Sui", "redstoneFeedId": "SUI" },
+    { "key": "NearToken", "symbol": "NEAR", "name": "Mock NEAR", "redstoneFeedId": "NEAR" },
+    { "key": "LtcToken", "symbol": "LTC", "name": "Mock Litecoin", "redstoneFeedId": "LTC" },
+    { "key": "IcpToken", "symbol": "ICP", "name": "Mock Internet Computer", "redstoneFeedId": "ICP" },
+    { "key": "UniToken", "symbol": "UNI", "name": "Mock Uniswap", "redstoneFeedId": "UNI" }
+  ]
+}
