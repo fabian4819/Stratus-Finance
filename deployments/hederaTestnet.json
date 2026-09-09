@@ -214,6 +214,12 @@
       "marketplaceAddress": "0x9e390F14859643a2bC57a8C051b848F8B0eC51B3",
       "verifyBuyTx": "0xd6e2d22a0ab1d04e0d9f1fd261b1157c61407005576df28330ca411619624e30",
       "verifyBuyer": "0x92Eee0A486a366EEB21c229A5A9672932753E9E1"
+    },
+    "cryptoBorrowReserves": {
+      "description": "20 top-market-cap MockCrypto tokens (BTC, ETH, USDT, XRP, BNB, SOL, DOGE, ADA, TRX, AVAX, SHIB, LINK, DOT, BCH, TON, SUI, NEAR, LTC, ICP, UNI) added as additional borrow-enabled pool reserves, alongside USDC - see docs/phase-5-crypto-borrow.md. Each is collateral-enabled AND borrow-enabled (LTV 50%/threshold 60%/bonus 10%), priced by a real RedStone feed, seeded with 500,000 units of pool liquidity per token (deposited from the deployer's own minted supply) so borrowing actually has something to draw from. Verified end-to-end for real: borrowed 0.1 ETH against existing collateral, repaid in full.",
+      "verifyBorrowTx": "0x5e3291364b4ad34a98a70254363e0f45fcba16b1e307722f486aa076ecf17a58",
+      "verifyRepayTx": "0xc1e73e1c483f4feed5738f738129efb722e48b2b0d19b1095b994a94ff747c60",
+      "gasLimitNote": "batchInitReserve's auto-estimated gas underestimated the true cost once 14 reserves already existed - fixed with an explicit gasLimit override (9M) on the batchInitReserve call itself rather than shrinking chunk size further; confirmed via the Hedera mirror node's contracts/results endpoint (gas_used running right up against the auto-estimated gas_limit), since HashIO's own error responses returned no decodable revert reason."
     }
   }
 }
