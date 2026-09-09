@@ -1,18 +1,21 @@
 import * as dotenv from "dotenv";
 import { providers, Wallet, Contract } from "ethers-v5";
 import { WrapperBuilder } from "@redstone-finance/evm-connector";
-import { requireContractAddress } from "./utils/deployments";
+import { requireContractAddress, loadDeployment } from "./utils/deployments";
+import * as stocksConfig from "../../tokenization/config/individual-stocks.json";
 
 dotenv.config();
 
 /**
- * Refreshes StratusRedstoneOracle's cached prices for GOLD-x, STOCK-x, and
- * USDC. Must be run before any operation that needs a fresh price
- * (deposit/borrow/liquidation/getUserRisk) — RedStone's signed data has to
- * be pulled and cached via a wrapped `updatePrice(asset)` call; unlike
- * Chainlink/Supra there is no continuous on-chain push. See
- * StratusRedstoneOracle.sol's contract-level docs for the full
- * architecture rationale.
+ * Refreshes StratusRedstoneOracle's cached prices for GOLD-x, STOCK-x,
+ * USDC, and every individual stock reserve wired so far
+ * (tokenization/config/individual-stocks.json — skips any not yet issued,
+ * so this stays runnable mid-rollout). Must be run before any operation
+ * that needs a fresh price (deposit/borrow/liquidation/getUserRisk) —
+ * RedStone's signed data has to be pulled and cached via a wrapped
+ * `updatePrice(asset)` call; unlike Chainlink/Supra there is no
+ * continuous on-chain push. See StratusRedstoneOracle.sol's
+ * contract-level docs for the full architecture rationale.
  *
  * Uses ethers v5 (aliased as "ethers-v5" in package.json) because
  * @redstone-finance/evm-connector@0.9.0's WrapperBuilder is built against
@@ -34,7 +37,16 @@ const AUTHORIZED_SIGNERS = [
   "0x9c5AE89C4Af6aA32cE58588DBaF90d18a855B6de",
 ];
 
-const ORACLE_ABI = ["function updatePrice(address asset) external"];
+const ORACLE_ABI = [
+  "function updatePrice(address asset) external",
+  "function feedIds(address asset) view returns (bytes32)",
+];
+
+interface StockDef {
+  key: string;
+  symbol: string;
+  redstoneFeedId: string;
+}
 
 async function main() {
   if (!PRIVATE_KEY) throw new Error("HEDERA_TESTNET_OPERATOR_PRIVATE_KEY not set");
@@ -48,6 +60,35 @@ async function main() {
   const wallet = new Wallet(PRIVATE_KEY, provider);
   const oracle = new Contract(oracleAddress, ORACLE_ABI, wallet);
 
+  const deployed = loadDeployment(NETWORK).contracts;
+  const stocks = (stocksConfig as { assets: StockDef[] }).assets;
+  const readyStocks: Array<StockDef & { asset: string }> = [];
+  const skipped: string[] = [];
+  for (const s of stocks) {
+    const asset = deployed[s.key];
+    if (!asset) {
+      skipped.push(`${s.symbol} (not issued yet)`);
+      continue;
+    }
+    const feedId: string = await oracle.feedIds(asset);
+    if (/^0x0+$/.test(feedId)) {
+      skipped.push(`${s.symbol} (feed id not wired yet — run 07-wire-individual-stock-feeds.ts)`);
+      continue;
+    }
+    readyStocks.push({ ...s, asset });
+  }
+  if (skipped.length > 0) {
+    console.log(`Skipping ${skipped.length}: ${skipped.join(", ")}`);
+  }
+
+  const targets: Array<{ label: string; asset: string }> = [
+    { label: "GOLD-x (XAU)", asset: goldAddress },
+    { label: "STOCK-x (USA500.Y)", asset: stockAddress },
+    { label: "USDC", asset: usdcAddress },
+    ...readyStocks.map((s) => ({ label: `${s.symbol} (${s.redstoneFeedId})`, asset: s.asset })),
+  ];
+  const dataPackagesIds = ["XAU", "USA500.Y", "USDC", ...readyStocks.map((s) => s.redstoneFeedId)];
+
   // `as any`: WrapperBuilder's own type declarations resolve `ethers.Contract`
   // against evm-connector's nested @ethersproject/* copy, which npm hoists
   // separately from this file's own "ethers-v5" alias resolution — same
@@ -55,16 +96,12 @@ async function main() {
   // interop cast, not a real type-safety gap.
   const wrapped = WrapperBuilder.wrap(oracle as any).usingDataService({
     dataServiceId: "redstone-primary-prod",
-    dataPackagesIds: ["XAU", "USA500.Y", "USDC"],
+    dataPackagesIds,
     uniqueSignersCount: 3,
     authorizedSigners: AUTHORIZED_SIGNERS,
   });
 
-  for (const [label, asset] of [
-    ["GOLD-x (XAU)", goldAddress],
-    ["STOCK-x (USA500.Y)", stockAddress],
-    ["USDC", usdcAddress],
-  ] as const) {
+  for (const { label, asset } of targets) {
     console.log(`Updating ${label}...`);
     const tx = await wrapped.updatePrice(asset);
     const receipt = await tx.wait();
