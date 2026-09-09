@@ -139,6 +139,12 @@
         "STOCK-x": "0xbad149300f49f93cf3cdd9525f9b57fe5dcd301644cb51205191a0596291d4ee",
         "USDC": "0x0bde075fb3ee2869004235ec3ad9003945426daf61ca6bb797fe898366d979f2"
       }
+    },
+    "individualStockReserves": {
+      "description": "10 individual real-stock reserves added alongside (not replacing) the original GOLD-x/STOCK-x basket - AAPL-x, TSLA-x, MSFT-x, NVDA-x, GOOGL-x, AMZN-x, META-x, BRKB-x, AMD-x, PLTR-x. Each is its own ATS Equity token, its own pool reserve (aToken/debtToken/interest rate strategy via batchInitReserve, chunked into groups of 3 - 11-at-once exceeded Hedera's per-tx gas limit), whitelisted (LendingPool + its own aToken) on its own ATS control list, and wired to a real RedStone price feed. Collateral-enabled, no borrowing (LTV 50%/threshold 60%/bonus 10%). An 11th candidate, CVX (intended as Chevron), was dropped after its returned price ($2.21) turned out to be Convex Finance's crypto token, not Chevron stock - caught by sanity-checking the value, not just the ticker name; see docs/phase-4-individual-stocks.md and tokenization/config/individual-stocks.json. Real deposit/withdraw verified end-to-end for AAPL-x (balances restored exactly).",
+      "verifyDepositTx": "0xc36fe21f0e1181e635d38ab4847269f10855d6681101066551ae515876138e96",
+      "verifyWithdrawTx": "0x570ba24c7f0426abe8cf416416795c19feec5a4ca53186c1c5b923464c937d0f",
+      "cvxTickerCollisionNote": "CvxToken/InterestRateStrategy_CVX-x/aToken_CVX-x exist in this file's contracts section (real on-chain infra, deployed before the collision was caught) but are unused and not referenced by tokenization/config/individual-stocks.json, the oracle price-refresh script, or the frontend."
     }
   }
 }
