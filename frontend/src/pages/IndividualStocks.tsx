@@ -4,6 +4,7 @@ import { useWallet } from "../lib/WalletContext";
 import { individualStocks, individualStocksConfigured, type IndividualStock } from "../lib/individualStocks";
 import { getErc20, getOracle, getPool } from "../lib/contracts";
 import { readProvider } from "../lib/wallet";
+import { fetchLivePrices } from "../lib/liveRedstonePrice";
 
 interface StockRow {
   stock: IndividualStock;
@@ -28,15 +29,29 @@ export function IndividualStocks() {
 
   const refresh = useCallback(async () => {
     const runner = signer ?? readProvider;
-    const oracle = getOracle(runner);
+
+    // Genuinely real-time — one batched StratusLivePriceReader call for
+    // all 10 stocks, not the pool's cached oracle (see liveRedstonePrice.ts).
+    // Falls back to the cache per-stock if the live gateway call fails.
+    let livePrices: Record<string, bigint> | null = null;
+    try {
+      livePrices = await fetchLivePrices(individualStocks.map((s) => s.redstoneFeedId));
+    } catch (liveErr) {
+      console.error("fetchLivePrices failed:", liveErr);
+    }
+    const oracle = livePrices ? null : getOracle(runner);
 
     const results = await Promise.all(
       individualStocks.map(async (stock) => {
         let price: bigint | null = null;
-        try {
-          price = await oracle.getAssetPrice(stock.tokenAddress);
-        } catch {
-          price = null; // stale/not-yet-refreshed cache — show "—" rather than crash the whole page
+        if (livePrices) {
+          price = livePrices[stock.redstoneFeedId] ?? null;
+        } else if (oracle) {
+          try {
+            price = await oracle.getAssetPrice(stock.tokenAddress);
+          } catch {
+            price = null; // stale/not-yet-refreshed cache — show "—" rather than crash the whole page
+          }
         }
 
         let walletBalance: bigint | null = null;
@@ -55,8 +70,11 @@ export function IndividualStocks() {
 
   useEffect(() => {
     refresh();
-    // Poll — same pull/cache oracle as the Risk Panel (StratusRedstoneOracle),
-    // this just re-reads whatever's currently cached, doesn't trigger a refresh.
+    // Poll — prices are genuinely real-time (StratusLivePriceReader, a
+    // fresh wrapped read every call); wallet/deposited balances are
+    // re-read too. Deposited value below is informational — the pool's
+    // own math for deposit/borrow/liquidation uses its cached oracle,
+    // which can differ slightly from this live number.
     const interval = setInterval(refresh, 15_000);
     return () => clearInterval(interval);
   }, [refresh]);
@@ -112,16 +130,21 @@ export function IndividualStocks() {
   return (
     <div className="max-w-3xl mx-auto p-6">
       <h1 className="text-xl font-semibold mb-4">Individual Stocks</h1>
-      <p className="text-sm text-slate-600 mb-6">
+      <p className="text-sm text-slate-600 mb-4">
         10 real, individually-priced stock reserves — deposited and borrowed against directly in the pool, alongside
-        (not replacing) the Gold + S&amp;P 500 Index basket. Live prices from RedStone.
+        (not replacing) the Gold + S&amp;P 500 Index basket.
       </p>
 
       {!address && (
-        <button onClick={connect} className="mb-6 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white">
+        <button onClick={connect} className="mb-4 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white">
           Connect wallet for balances &amp; deposits
         </button>
       )}
+
+      <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-emerald-600">
+        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+        Live market prices — Deposited value is informational; deposit/borrow/liquidation use the protocol's cached price
+      </div>
 
       <div className="rounded-lg border border-slate-200 mb-6 overflow-hidden">
         <table className="w-full text-sm">

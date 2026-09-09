@@ -5,6 +5,7 @@ import { DemoStressBanner } from "../components/DemoStressBanner";
 import { addresses, addressesConfigured } from "../lib/addresses";
 import { getOracle, getRiskView } from "../lib/contracts";
 import { readProvider } from "../lib/wallet";
+import { fetchLivePrices } from "../lib/liveRedstonePrice";
 
 interface ComponentRisk {
   aTokenBalance: bigint;
@@ -29,14 +30,31 @@ export function RiskPanel() {
     // needs an actual address.
     const oracle = getOracle(signer ?? readProvider);
 
-    const [goldPrice, stockPrice, usdcPrice, goldStressed, stockStressed] = await Promise.all([
-      oracle.getAssetPrice(addresses.goldToken),
-      oracle.getAssetPrice(addresses.stockIndexToken),
-      oracle.getAssetPrice(addresses.usdc),
+    const [goldStressed, stockStressed] = await Promise.all([
       oracle.isDemoStressed(addresses.goldToken),
       oracle.isDemoStressed(addresses.stockIndexToken),
     ]);
-    setPrices({ gold: goldPrice, stock: stockPrice, usdc: usdcPrice });
+
+    // Genuinely real-time — StratusLivePriceReader, not the pool's cached
+    // oracle (see liveRedstonePrice.ts). Falls back to the cache if the
+    // live gateway call fails (e.g. offline), so the panel still shows
+    // *a* number rather than blanking out.
+    try {
+      const live = await fetchLivePrices(["XAU", "USA500.Y", "USDC"]);
+      setPrices({ gold: live["XAU"], stock: live["USA500.Y"], usdc: live["USDC"] });
+    } catch (liveErr) {
+      console.error("fetchLivePrices failed:", liveErr);
+      try {
+        const [goldPrice, stockPrice, usdcPrice] = await Promise.all([
+          oracle.getAssetPrice(addresses.goldToken),
+          oracle.getAssetPrice(addresses.stockIndexToken),
+          oracle.getAssetPrice(addresses.usdc),
+        ]);
+        setPrices({ gold: goldPrice, stock: stockPrice, usdc: usdcPrice });
+      } catch {
+        setPrices(null);
+      }
+    }
 
     const stressed: string[] = [];
     if (goldStressed) stressed.push("Gold");
@@ -52,11 +70,13 @@ export function RiskPanel() {
 
   useEffect(() => {
     refresh();
-    // Poll — StratusRedstoneOracle is a pull/cache oracle (see its
-    // contract-level docs): prices only refresh when
-    // script/update-redstone-prices.ts runs a RedStone-wrapped
-    // updatePrice() tx, not continuously like a push oracle. This just
-    // re-reads whatever's currently cached on-chain.
+    // Poll — the price row above is genuinely real-time (StratusLivePriceReader,
+    // a fresh wrapped read every call), but the combined health factor and
+    // per-leg cards still come from the pool's cached oracle
+    // (StratusRedstoneOracle) via StratusRiskView, since that's what
+    // deposit/borrow/liquidation actually enforce — see
+    // docs/phase-3-oracle-research.md for why that side can't be made
+    // real-time the same way.
     const interval = setInterval(refresh, 15_000);
     return () => clearInterval(interval);
   }, [refresh]);
@@ -76,6 +96,10 @@ export function RiskPanel() {
           </button>
         )}
 
+        <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-emerald-600">
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+          Live market prices
+        </div>
         <div className="rounded-lg border border-slate-200 p-4 mb-4 text-sm space-y-1">
           <div className="flex justify-between">
             <span className="text-slate-500">Gold price (XAU/USD)</span>
@@ -91,6 +115,9 @@ export function RiskPanel() {
           </div>
         </div>
 
+        <div className="mb-1 text-xs text-slate-400">
+          Uses the protocol's cached price (refreshed periodically) — what deposit/borrow/liquidation actually enforce
+        </div>
         <div className="rounded-lg border border-slate-200 p-4 mb-6 text-sm flex justify-between">
           <span className="text-slate-500">Combined health factor (real, enforced)</span>
           <span className="font-medium">
