@@ -2,15 +2,26 @@ import { useEffect, useState, useCallback } from "react";
 import { formatEther, formatUnits, parseUnits, MaxUint256 } from "ethers";
 import { useWallet } from "../lib/WalletContext";
 import { addresses, addressesConfigured } from "../lib/addresses";
-import { getPool, getUsdc, getRiskView } from "../lib/contracts";
+import { getPool, getUsdc, getRiskView, getErc20, getOracle } from "../lib/contracts";
+import { individualStocks } from "../lib/individualStocks";
 
 const VARIABLE_RATE_MODE = 2;
 const USDC_DECIMALS = 6;
 
+interface StockCollateral {
+  displayName: string;
+  collateralValueUsd: bigint;
+}
+
 /** PLAN.md §Phase 5, Screen 3: borrow/repay USDC directly against the
  * pool (StratusVault is not in this path — see its contract docs).
- * Combined capacity is shown itemised per component, not as one blended
- * number, via StratusRiskView. */
+ * Combined capacity is itemised per collateral source, not shown as one
+ * blended number: Gold/S&P 500 Index via StratusRiskView (fixed 2-slot
+ * view), plus any individual stock reserve (docs/phase-4-individual-stocks.md)
+ * the user has actually deposited into — Aave v2's borrow() is
+ * account-level, not tied to one collateral asset, so those contribute
+ * to "Combined available to borrow" whether or not they're itemised;
+ * verified with a real deposit-AAPL-x/borrow/repay/withdraw tx. */
 export function BorrowRepay() {
   const { signer, address, connect } = useWallet();
   const [borrowAmount, setBorrowAmount] = useState("1");
@@ -22,6 +33,7 @@ export function BorrowRepay() {
     healthFactor: bigint;
   } | null>(null);
   const [componentCapacity, setComponentCapacity] = useState<{ gold: bigint; stock: bigint } | null>(null);
+  const [stockCollateral, setStockCollateral] = useState<StockCollateral[]>([]);
   const [status, setStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -30,6 +42,7 @@ export function BorrowRepay() {
     const pool = getPool(signer);
     const usdc = getUsdc(signer);
     const riskView = getRiskView(signer);
+    const oracle = getOracle(signer);
 
     const [balance, data, risk] = await Promise.all([
       usdc.balanceOf(address),
@@ -50,6 +63,26 @@ export function BorrowRepay() {
     const gold = risk.components[0];
     const stock = risk.components[1];
     setComponentCapacity({ gold: gold.collateralValueUsd, stock: stock.collateralValueUsd });
+
+    // StratusRiskView is a fixed 2-slot view (Gold + S&P 500 Index only) —
+    // individual stock collateral isn't in it, but it DOES contribute to
+    // "Combined available to borrow" above (pool-level, asset-agnostic).
+    // Compute each stock's own collateral value client-side (aToken
+    // balance × oracle price, same math StratusRiskView does internally)
+    // so a user who deposited one can see where their capacity is coming
+    // from, without needing a contract change.
+    const perStock = await Promise.all(
+      individualStocks.map(async (s) => {
+        const aToken = getErc20(s.aTokenAddress, signer);
+        const [balance, price]: [bigint, bigint] = await Promise.all([
+          aToken.balanceOf(address),
+          oracle.getAssetPrice(s.tokenAddress),
+        ]);
+        const collateralValueUsd = (balance * price) / 10n ** 18n;
+        return { displayName: s.displayName, collateralValueUsd };
+      })
+    );
+    setStockCollateral(perStock.filter((s) => s.collateralValueUsd > 0n));
   }, [signer, address]);
 
   useEffect(() => {
@@ -118,6 +151,12 @@ export function BorrowRepay() {
               <span className="text-slate-500">From S&amp;P 500 Index leg</span>
               <span>{componentCapacity ? `$${Number(formatEther(componentCapacity.stock)).toFixed(2)}` : "—"} collateral</span>
             </div>
+            {stockCollateral.map((s) => (
+              <div key={s.displayName} className="flex justify-between mb-1">
+                <span className="text-slate-500">From {s.displayName}</span>
+                <span>${Number(formatEther(s.collateralValueUsd)).toFixed(2)} collateral</span>
+              </div>
+            ))}
             <div className="flex justify-between font-medium border-t border-slate-200 pt-1 mt-1">
               <span>Combined available to borrow</span>
               <span>{accountData ? `$${Number(formatEther(accountData.availableBorrowsUsd)).toFixed(2)}` : "—"}</span>
