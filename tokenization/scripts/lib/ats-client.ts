@@ -47,6 +47,10 @@ const IControlListABI = [
   "function addToControlList(address _account) external returns (bool)",
   "function isInControlList(address _account) external view returns (bool)",
 ];
+const IAccessControlABI = [
+  "function grantRole(bytes32 _role, address _account) external returns (bool)",
+  "function hasRole(bytes32 _role, address _account) external view returns (bool)",
+];
 const ICoreABI = [
   "function decimals() external view returns (uint8)",
   "function name() external view returns (string)",
@@ -128,6 +132,22 @@ export async function whitelist(diamondAddress: string, signer: ethers.Wallet, a
   const alreadyIn: boolean = await controlList.isInControlList(account);
   if (alreadyIn) return;
   const tx = await controlList.addToControlList(account, { gasLimit: 500_000 });
+  await tx.wait();
+}
+
+/**
+ * Grants `role` (bytes32, e.g. ATS_ROLES.ROLE_CONTROL_LIST) to `account`
+ * on `diamondAddress`. Caller must hold the admin role for `role`
+ * (defaults to the deployer's implicit DEFAULT_ADMIN_ROLE — verified
+ * directly against a live token before this was relied on). No-ops if
+ * `account` already holds `role` (grantRole reverts with
+ * AccountAssignedToRole otherwise).
+ */
+export async function grantRole(diamondAddress: string, signer: ethers.Wallet, role: string, account: string): Promise<void> {
+  const ac = new ethers.Contract(diamondAddress, IAccessControlABI, signer);
+  const already: boolean = await ac.hasRole(role, account);
+  if (already) return;
+  const tx = await ac.grantRole(role, account, { gasLimit: 500_000 });
   await tx.wait();
 }
 
