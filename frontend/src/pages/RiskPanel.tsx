@@ -52,7 +52,12 @@ export function RiskPanel() {
 
   useEffect(() => {
     refresh();
-    const interval = setInterval(refresh, 15_000); // poll — Chainlink feeds update on-chain independently of user actions
+    // Poll — StratusRedstoneOracle is a pull/cache oracle (see its
+    // contract-level docs): prices only refresh when
+    // script/update-redstone-prices.ts runs a RedStone-wrapped
+    // updatePrice() tx, not continuously like a push oracle. This just
+    // re-reads whatever's currently cached on-chain.
+    const interval = setInterval(refresh, 15_000);
     return () => clearInterval(interval);
   }, [refresh]);
 
@@ -73,11 +78,11 @@ export function RiskPanel() {
 
         <div className="rounded-lg border border-slate-200 p-4 mb-4 text-sm space-y-1">
           <div className="flex justify-between">
-            <span className="text-slate-500">GOLD-x price (HBAR/USD)</span>
-            <span>{prices ? `$${Number(formatEther(prices.gold)).toFixed(4)}` : "—"}</span>
+            <span className="text-slate-500">GOLD-x price (XAU/USD — real gold)</span>
+            <span>{prices ? `$${Number(formatEther(prices.gold)).toFixed(2)}` : "—"}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-slate-500">STOCK-x price (ETH/USD)</span>
+            <span className="text-slate-500">STOCK-x price (S&amp;P 500 index — real)</span>
             <span>{prices ? `$${Number(formatEther(prices.stock)).toFixed(2)}` : "—"}</span>
           </div>
           <div className="flex justify-between">

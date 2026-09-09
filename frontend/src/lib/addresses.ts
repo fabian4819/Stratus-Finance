@@ -9,9 +9,11 @@ export const addresses = {
   stratusBasketToken: importEnv("VITE_STRATUS_BASKET_TOKEN"),
   stratusVault: importEnv("VITE_STRATUS_VAULT"),
   stratusRiskView: importEnv("VITE_STRATUS_RISK_VIEW"),
-  // The pool is live on the Chainlink-backed oracle, not the originally
-  // designed Pyth one — see docs/phase-2-findings.md. Both addresses are
-  // kept so the UI can label the active oracle honestly if needed.
+  // The pool is live on the RedStone-backed oracle (real gold/S&P 500
+  // prices) — see docs/phase-3-oracle-research.md. The Chainlink and Pyth
+  // addresses are kept so the UI/scripts can reference prior oracles if
+  // needed; only one is actually live on the pool at a time.
+  stratusRedstoneOracle: importEnv("VITE_STRATUS_REDSTONE_PRICE_ORACLE"),
   stratusChainlinkPriceOracle: importEnv("VITE_STRATUS_CHAINLINK_PRICE_ORACLE"),
   stratusPriceOracle: importEnv("VITE_STRATUS_PRICE_ORACLE"),
   lendingPool: importEnv("VITE_LENDING_POOL"),

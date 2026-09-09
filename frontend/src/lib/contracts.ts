@@ -34,10 +34,12 @@ export function getRiskView(runner: ContractRunner) {
   return new Contract(addresses.stratusRiskView, RISK_VIEW_ABI, runner);
 }
 
-/** The pool is live on this oracle (Chainlink-backed), not the originally
- * designed Pyth one — see docs/phase-2-findings.md. */
+/** The pool is live on this oracle (RedStone-backed, real gold/S&P 500
+ * prices) — see docs/phase-3-oracle-research.md. Its prices only refresh
+ * when script/update-redstone-prices.ts runs (pull/cache model, not a
+ * continuous push) — this just reads whatever's currently cached. */
 export function getOracle(runner: ContractRunner) {
-  return new Contract(addresses.stratusChainlinkPriceOracle, ORACLE_ABI, runner);
+  return new Contract(addresses.stratusRedstoneOracle, ORACLE_ABI, runner);
 }
 
 export function getGoldToken(runner: ContractRunner) {
