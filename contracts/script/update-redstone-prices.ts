@@ -3,19 +3,21 @@ import { providers, Wallet, Contract } from "ethers-v5";
 import { WrapperBuilder } from "@redstone-finance/evm-connector";
 import { requireContractAddress, loadDeployment } from "./utils/deployments";
 import * as stocksConfig from "../../tokenization/config/individual-stocks.json";
+import * as cryptoConfig from "../config/borrowable-crypto.json";
 
 dotenv.config();
 
 /**
  * Refreshes StratusRedstoneOracle's cached prices for GOLD-x, STOCK-x,
- * USDC, and every individual stock reserve wired so far
- * (tokenization/config/individual-stocks.json — skips any not yet issued,
- * so this stays runnable mid-rollout). Must be run before any operation
- * that needs a fresh price (deposit/borrow/liquidation/getUserRisk) —
- * RedStone's signed data has to be pulled and cached via a wrapped
- * `updatePrice(asset)` call; unlike Chainlink/Supra there is no
- * continuous on-chain push. See StratusRedstoneOracle.sol's
- * contract-level docs for the full architecture rationale.
+ * USDC, every individual stock reserve (tokenization/config/individual-stocks.json),
+ * and every borrowable crypto reserve (config/borrowable-crypto.json) —
+ * skips any not yet issued/wired, so this stays runnable mid-rollout.
+ * Must be run before any operation that needs a fresh price
+ * (deposit/borrow/liquidation/getUserRisk) — RedStone's signed data has
+ * to be pulled and cached via a wrapped `updatePrice(asset)` call; unlike
+ * Chainlink/Supra there is no continuous on-chain push. See
+ * StratusRedstoneOracle.sol's contract-level docs for the full
+ * architecture rationale.
  *
  * Uses ethers v5 (aliased as "ethers-v5" in package.json) because
  * @redstone-finance/evm-connector@0.9.0's WrapperBuilder is built against
@@ -42,10 +44,34 @@ const ORACLE_ABI = [
   "function feedIds(address asset) view returns (bytes32)",
 ];
 
-interface StockDef {
+interface AssetDef {
   key: string;
   symbol: string;
   redstoneFeedId: string;
+}
+
+async function resolveReady(
+  oracle: Contract,
+  deployed: Record<string, string>,
+  assets: AssetDef[],
+  wiringScriptHint: string,
+  skipped: string[]
+): Promise<Array<AssetDef & { asset: string }>> {
+  const ready: Array<AssetDef & { asset: string }> = [];
+  for (const a of assets) {
+    const asset = deployed[a.key];
+    if (!asset) {
+      skipped.push(`${a.symbol} (not issued yet)`);
+      continue;
+    }
+    const feedId: string = await oracle.feedIds(asset);
+    if (/^0x0+$/.test(feedId)) {
+      skipped.push(`${a.symbol} (feed id not wired yet — run ${wiringScriptHint})`);
+      continue;
+    }
+    ready.push({ ...a, asset });
+  }
+  return ready;
 }
 
 async function main() {
@@ -61,33 +87,33 @@ async function main() {
   const oracle = new Contract(oracleAddress, ORACLE_ABI, wallet);
 
   const deployed = loadDeployment(NETWORK).contracts;
-  const stocks = (stocksConfig as { assets: StockDef[] }).assets;
-  const readyStocks: Array<StockDef & { asset: string }> = [];
   const skipped: string[] = [];
-  for (const s of stocks) {
-    const asset = deployed[s.key];
-    if (!asset) {
-      skipped.push(`${s.symbol} (not issued yet)`);
-      continue;
-    }
-    const feedId: string = await oracle.feedIds(asset);
-    if (/^0x0+$/.test(feedId)) {
-      skipped.push(`${s.symbol} (feed id not wired yet — run 07-wire-individual-stock-feeds.ts)`);
-      continue;
-    }
-    readyStocks.push({ ...s, asset });
-  }
+  const readyStocks = await resolveReady(
+    oracle,
+    deployed,
+    (stocksConfig as { assets: AssetDef[] }).assets,
+    "07-wire-individual-stock-feeds.ts",
+    skipped
+  );
+  const readyCrypto = await resolveReady(
+    oracle,
+    deployed,
+    (cryptoConfig as { assets: AssetDef[] }).assets,
+    "11-wire-crypto-feeds.ts",
+    skipped
+  );
   if (skipped.length > 0) {
     console.log(`Skipping ${skipped.length}: ${skipped.join(", ")}`);
   }
 
+  const readyAssets = [...readyStocks, ...readyCrypto];
   const targets: Array<{ label: string; asset: string }> = [
     { label: "GOLD-x (XAU)", asset: goldAddress },
     { label: "STOCK-x (USA500.Y)", asset: stockAddress },
     { label: "USDC", asset: usdcAddress },
-    ...readyStocks.map((s) => ({ label: `${s.symbol} (${s.redstoneFeedId})`, asset: s.asset })),
+    ...readyAssets.map((a) => ({ label: `${a.symbol} (${a.redstoneFeedId})`, asset: a.asset })),
   ];
-  const dataPackagesIds = ["XAU", "USA500.Y", "USDC", ...readyStocks.map((s) => s.redstoneFeedId)];
+  const dataPackagesIds = ["XAU", "USA500.Y", "USDC", ...readyAssets.map((a) => a.redstoneFeedId)];
 
   // `as any`: WrapperBuilder's own type declarations resolve `ethers.Contract`
   // against evm-connector's nested @ethersproject/* copy, which npm hoists
