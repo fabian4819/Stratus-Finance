@@ -1,6 +1,6 @@
 {
   "network": "hederaTestnet",
-  "updatedAt": "2026-09-09T16:17:27.449Z",
+  "updatedAt": "2026-09-09T16:43:05.092Z",
   "contracts": {
     "GoldToken": "0xcF19378058EC9DFD25975527BDf7F68faeC2C7fc",
     "StockIndexToken": "0x59E3908069993cDDbD3C83479c1aFc92242c0d3A",
@@ -64,7 +64,8 @@
     "aToken_CVX-x": "0x3209c6cab45C4FAC2d5E8fD810ce8562EC2FC191",
     "aToken_AMD-x": "0x586e6568ac04c245854bb06F39CaF20c3C1A0B9E",
     "aToken_PLTR-x": "0x4351a36D6a5D54bf7210B5720d00C43c21887534",
-    "StratusLivePriceReader": "0x4bD75A26965a94f3b0E3845d31Ed5cc2dc50A5eE"
+    "StratusLivePriceReader": "0x4bD75A26965a94f3b0E3845d31Ed5cc2dc50A5eE",
+    "StratusMarketplace": "0x9e390F14859643a2bC57a8C051b848F8B0eC51B3"
   },
   "meta": {
     "gate1RoundTrip": {
@@ -147,6 +148,12 @@
       "verifyWithdrawTx": "0x570ba24c7f0426abe8cf416416795c19feec5a4ca53186c1c5b923464c937d0f",
       "cvxTickerCollisionNote": "CvxToken/InterestRateStrategy_CVX-x/aToken_CVX-x exist in this file's contracts section (real on-chain infra, deployed before the collision was caught) but are unused and not referenced by tokenization/config/individual-stocks.json, the oracle price-refresh script, or the frontend.",
       "verifyBorrowNote": "Also verified real borrow/repay against individual stock collateral, not just deposit/withdraw: deposited 50 AAPL-x, borrowed 500 USDC against it (Aave v2's borrow() is account-level, not tied to a specific collateral asset - confirmed this actually works for a newly-added reserve, not just GOLD-x/STOCK-x), USDC wallet balance +500 confirmed, repaid, withdrew AAPL-x. Surfaced a real frontend gap in the process: BorrowRepay.tsx's itemized capacity breakdown only showed Gold/S&P 500 Index legs, not individual stocks, even though the underlying capacity number was always correct (pool.getUserAccountData is asset-agnostic) - fixed by extending the breakdown to include any individual stock with a non-zero deposited balance."
+    },
+    "marketplace": {
+      "description": "StratusMarketplace - self-serve 'buy tokenized assets with USDC' flow, fully self-serve (no admin action needed per buyer). ATS enforces control-list whitelisting on every transfer; the marketplace contract is granted ROLE_CONTROL_LIST on each of the 12 sellable tokens (GOLD-x, STOCK-x, 10 individual stocks - CVX excluded, see phase-4 doc) so it can whitelist a first-time buyer atomically inside the same buy() transaction. Priced at the live protocol oracle (StratusRedstoneOracle). Inventory (1000 units per token) transferred from the admin's existing pre-minted supply; GOLD-x needed a top-up mint first (only 65 left after all the Gate 1-4 testing this session did). Verified end-to-end for real: a wallet confirmed NEVER whitelisted on PLTR-x bought 2 PLTR-x for 341.32 USDC with zero prior admin action, and was auto-whitelisted as part of the same transaction.",
+      "marketplaceAddress": "0x9e390F14859643a2bC57a8C051b848F8B0eC51B3",
+      "verifyBuyTx": "0xd6e2d22a0ab1d04e0d9f1fd261b1157c61407005576df28330ca411619624e30",
+      "verifyBuyer": "0x92Eee0A486a366EEB21c229A5A9672932753E9E1"
     }
   }
 }
