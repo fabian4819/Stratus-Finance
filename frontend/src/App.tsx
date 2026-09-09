@@ -5,12 +5,14 @@ import { MintBasket } from "./pages/MintBasket";
 import { Deposit } from "./pages/Deposit";
 import { BorrowRepay } from "./pages/BorrowRepay";
 import { RiskPanel } from "./pages/RiskPanel";
+import { IndividualStocks } from "./pages/IndividualStocks";
 
 const NAV_ITEMS = [
   { to: "/mint", label: "Mint Basket" },
   { to: "/deposit", label: "Deposit" },
   { to: "/borrow", label: "Borrow / Repay" },
   { to: "/risk", label: "Risk Panel" },
+  { to: "/stocks", label: "Individual Stocks" },
 ];
 
 export default function App() {
@@ -44,6 +46,7 @@ export default function App() {
             <Route path="/deposit" element={<Deposit />} />
             <Route path="/borrow" element={<BorrowRepay />} />
             <Route path="/risk" element={<RiskPanel />} />
+            <Route path="/stocks" element={<IndividualStocks />} />
           </Routes>
         </main>
       </div>
