@@ -15,6 +15,7 @@ export interface IndividualStock {
   displayName: string; // clean name for the UI, e.g. "Apple"
   tokenAddress: string;
   aTokenAddress: string;
+  redstoneFeedId: string; // for StratusLivePriceReader — see liveRedstonePrice.ts
 }
 
 function importEnv(key: string): string {
@@ -22,16 +23,16 @@ function importEnv(key: string): string {
 }
 
 export const individualStocks: IndividualStock[] = [
-  { symbol: "AAPL-x", displayName: "Apple", tokenAddress: importEnv("VITE_AAPL_TOKEN"), aTokenAddress: importEnv("VITE_ATOKEN_AAPL") },
-  { symbol: "TSLA-x", displayName: "Tesla", tokenAddress: importEnv("VITE_TSLA_TOKEN"), aTokenAddress: importEnv("VITE_ATOKEN_TSLA") },
-  { symbol: "MSFT-x", displayName: "Microsoft", tokenAddress: importEnv("VITE_MSFT_TOKEN"), aTokenAddress: importEnv("VITE_ATOKEN_MSFT") },
-  { symbol: "NVDA-x", displayName: "Nvidia", tokenAddress: importEnv("VITE_NVDA_TOKEN"), aTokenAddress: importEnv("VITE_ATOKEN_NVDA") },
-  { symbol: "GOOGL-x", displayName: "Alphabet", tokenAddress: importEnv("VITE_GOOGL_TOKEN"), aTokenAddress: importEnv("VITE_ATOKEN_GOOGL") },
-  { symbol: "AMZN-x", displayName: "Amazon", tokenAddress: importEnv("VITE_AMZN_TOKEN"), aTokenAddress: importEnv("VITE_ATOKEN_AMZN") },
-  { symbol: "META-x", displayName: "Meta", tokenAddress: importEnv("VITE_META_TOKEN"), aTokenAddress: importEnv("VITE_ATOKEN_META") },
-  { symbol: "BRKB-x", displayName: "Berkshire Hathaway", tokenAddress: importEnv("VITE_BRKB_TOKEN"), aTokenAddress: importEnv("VITE_ATOKEN_BRKB") },
-  { symbol: "AMD-x", displayName: "AMD", tokenAddress: importEnv("VITE_AMD_TOKEN"), aTokenAddress: importEnv("VITE_ATOKEN_AMD") },
-  { symbol: "PLTR-x", displayName: "Palantir", tokenAddress: importEnv("VITE_PLTR_TOKEN"), aTokenAddress: importEnv("VITE_ATOKEN_PLTR") },
+  { symbol: "AAPL-x", displayName: "Apple", tokenAddress: importEnv("VITE_AAPL_TOKEN"), aTokenAddress: importEnv("VITE_ATOKEN_AAPL"), redstoneFeedId: "AAPL" },
+  { symbol: "TSLA-x", displayName: "Tesla", tokenAddress: importEnv("VITE_TSLA_TOKEN"), aTokenAddress: importEnv("VITE_ATOKEN_TSLA"), redstoneFeedId: "TSLA" },
+  { symbol: "MSFT-x", displayName: "Microsoft", tokenAddress: importEnv("VITE_MSFT_TOKEN"), aTokenAddress: importEnv("VITE_ATOKEN_MSFT"), redstoneFeedId: "MSFT" },
+  { symbol: "NVDA-x", displayName: "Nvidia", tokenAddress: importEnv("VITE_NVDA_TOKEN"), aTokenAddress: importEnv("VITE_ATOKEN_NVDA"), redstoneFeedId: "NVDA" },
+  { symbol: "GOOGL-x", displayName: "Alphabet", tokenAddress: importEnv("VITE_GOOGL_TOKEN"), aTokenAddress: importEnv("VITE_ATOKEN_GOOGL"), redstoneFeedId: "GOOGL" },
+  { symbol: "AMZN-x", displayName: "Amazon", tokenAddress: importEnv("VITE_AMZN_TOKEN"), aTokenAddress: importEnv("VITE_ATOKEN_AMZN"), redstoneFeedId: "AMZN" },
+  { symbol: "META-x", displayName: "Meta", tokenAddress: importEnv("VITE_META_TOKEN"), aTokenAddress: importEnv("VITE_ATOKEN_META"), redstoneFeedId: "META" },
+  { symbol: "BRKB-x", displayName: "Berkshire Hathaway", tokenAddress: importEnv("VITE_BRKB_TOKEN"), aTokenAddress: importEnv("VITE_ATOKEN_BRKB"), redstoneFeedId: "BRKB" },
+  { symbol: "AMD-x", displayName: "AMD", tokenAddress: importEnv("VITE_AMD_TOKEN"), aTokenAddress: importEnv("VITE_ATOKEN_AMD"), redstoneFeedId: "AMD" },
+  { symbol: "PLTR-x", displayName: "Palantir", tokenAddress: importEnv("VITE_PLTR_TOKEN"), aTokenAddress: importEnv("VITE_ATOKEN_PLTR"), redstoneFeedId: "PLTR" },
 ];
 
 export function individualStocksConfigured(): boolean {

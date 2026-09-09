@@ -14,6 +14,9 @@ export const addresses = {
   // addresses are kept so the UI/scripts can reference prior oracles if
   // needed; only one is actually live on the pool at a time.
   stratusRedstoneOracle: importEnv("VITE_STRATUS_REDSTONE_PRICE_ORACLE"),
+  // Standalone, genuinely real-time price reader — NOT the pool's oracle,
+  // see StratusLivePriceReader.sol's docs. Frontend-display-only.
+  stratusLivePriceReader: importEnv("VITE_STRATUS_LIVE_PRICE_READER"),
   stratusChainlinkPriceOracle: importEnv("VITE_STRATUS_CHAINLINK_PRICE_ORACLE"),
   stratusPriceOracle: importEnv("VITE_STRATUS_PRICE_ORACLE"),
   lendingPool: importEnv("VITE_LENDING_POOL"),
