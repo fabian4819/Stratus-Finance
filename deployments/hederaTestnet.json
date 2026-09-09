@@ -1,6 +1,6 @@
 {
   "network": "hederaTestnet",
-  "updatedAt": "2026-09-09T04:35:19.758Z",
+  "updatedAt": "2026-09-09T05:19:27.857Z",
   "contracts": {
     "GoldToken": "0xcF19378058EC9DFD25975527BDf7F68faeC2C7fc",
     "StockIndexToken": "0x59E3908069993cDDbD3C83479c1aFc92242c0d3A",
@@ -28,8 +28,9 @@
     "aToken_STOCK-x": "0x0C19b77B8bb49b86abbEC0f64bB5733C4CE2A03d",
     "aToken_USDC": "0xDfc07b53E8D6aA1194E2E2Ef2d352B6bA049B1a1",
     "StratusVault": "0x7F16Cd599BF2aDBBacD856263ef36eABFfeC06B2",
-    "StratusRiskView": "0xB870E71174Dd5D6775B58AD5824140470B6A13De",
-    "StratusChainlinkPriceOracle": "0x784B85521B77F43655960718539E85fBa012e659"
+    "StratusRiskView": "0xBFe160409B8f0Ebb9DC7Bb67f5E3373e1457eE5d",
+    "StratusChainlinkPriceOracle": "0x784B85521B77F43655960718539E85fBa012e659",
+    "StratusRedstoneOracle": "0xeB188cF2F86E2236001Ca1BEB8E8b3f2184D662D"
   },
   "meta": {
     "gate1RoundTrip": {
@@ -86,6 +87,25 @@
       "description": "StratusRiskView's `oracle` is immutable and was still pointed at the dead Pyth-backed StratusPriceOracle from before the oraclePivot (see that meta entry) - the pool itself moved to Chainlink, but RiskView's own getAssetPrice() call kept hitting Pyth and reverting with StalePrice() (selector 0x19abf40e), surfaced in the frontend as an unreadable 'unknown custom error' on every Deposit/Risk Panel page load. Redeployed StratusRiskView (read-only, no state) against StratusChainlinkPriceOracle via contracts/script/redeploy-risk-view.ts; getUserRisk() now succeeds on-chain with no revert. Old, broken address was 0x05aD00333d8bf0C920F0041770344182c54f37c4.",
       "oldAddress": "0x05aD00333d8bf0C920F0041770344182c54f37c4",
       "newAddress": "0xB870E71174Dd5D6775B58AD5824140470B6A13De"
+    },
+    "redstoneOracleIntegration": {
+      "description": "Real RWA price feeds via RedStone's pull oracle model (redstone-primary-prod data service) - GOLD-x tracks real gold (XAU), STOCK-x tracks the real S&P 500 index (USA500.Y), USDC tracks real USDC/USD. Closes the disclosed-substitute gap in StratusChainlinkPriceOracle/StratusPriceOracle (which mapped GOLD-x/STOCK-x to HBAR/ETH since no RWA feed was live on Hedera testnet from Chainlink, Supra, or blocked Pyth - see docs/phase-3-oracle-research.md for the full research trail, including 3 real bugs found in RedStone's own published package). Architecture: updatePrice(asset) is a permissionless function that must be called via a RedStone-wrapped transaction (calldata carries a signed price payload) and caches {price, timestamp}; getAssetPrice(asset), the IPriceOracleGetter-facing function everything else calls, is a plain view read of that cache - so StratusRiskView/LendingPool/frontend needed no RedStone-specific changes. Prices only refresh when script/update-redstone-prices.ts runs (pull/cache, not continuous push) - a real ongoing operational requirement, run before any demo.",
+      "oracleAddress": "0xeB188cF2F86E2236001Ca1BEB8E8b3f2184D662D",
+      "feedIds": {
+        "GOLD-x": "XAU",
+        "STOCK-x": "USA500.Y",
+        "USDC": "USDC"
+      },
+      "setPriceOracleTx": "0xb3e48c755e551e3da3078074e8c29de8f4c4a00e1be33714b210b6897226836b",
+      "riskViewRedeploy": {
+        "oldAddress": "0xB870E71174Dd5D6775B58AD5824140470B6A13De",
+        "newAddress": "0xBFe160409B8f0Ebb9DC7Bb67f5E3373e1457eE5d"
+      },
+      "priceUpdateTxs": {
+        "GOLD-x": "0x1ca9782ed71b91f256cf8d64e67c284bf54eac7106cba9b62938a78dee96a830",
+        "STOCK-x": "0xbad149300f49f93cf3cdd9525f9b57fe5dcd301644cb51205191a0596291d4ee",
+        "USDC": "0x0bde075fb3ee2869004235ec3ad9003945426daf61ca6bb797fe898366d979f2"
+      }
     }
   }
 }
