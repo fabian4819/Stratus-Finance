@@ -154,3 +154,34 @@ longer than `maxPriceAge` (1 hour).
 in the codebase, same as before — real, working (Chainlink) or real,
 documented-but-blocked (Pyth) implementations of the same interface,
 switchable via a single `setPriceOracle` call.
+
+## Follow-up: genuinely real-time price display (`StratusLivePriceReader`)
+
+The cache above is unavoidable for anything the pool enforces
+(deposit/borrow/liquidation, via `LendingPool`/`StratusRiskView`) —
+RedStone's signed calldata doesn't propagate through the internal
+Solidity calls those contracts make. But nothing stops the *frontend*
+from reading a price with no cache in between, for display purposes: a
+wrapped `eth_call` works the same way for a `view` function as it does
+for a state-changing transaction — it's still just calldata carrying a
+signed payload, and `getOracleNumericValueFromTxMsg` doesn't care which
+kind of call it's in.
+
+`StratusLivePriceReader.sol` — a standalone contract, never called by the
+pool, RiskView, or any deposit/borrow/liquidation path — exposes
+`getLivePrices(bytes32[] feedIds)`, batching all 13 feed ids into one
+wrapped call. Deployed at `0x4bD75A26965a94f3b0E3845d31Ed5cc2dc50A5eE`;
+verified for real (all 13 live prices returned correctly in one
+gateway round-trip, zero gas since it's a plain read).
+
+Frontend side: `@redstone-finance/evm-connector`/`ethers-v5` (aliased,
+same pattern as `contracts/script/update-redstone-prices.ts`) added to
+the frontend package directly — confirmed RedStone's gateway sends
+`access-control-allow-origin: *`, so the browser can call it straight
+from the page, no proxy needed. `RiskPanel.tsx` and
+`IndividualStocks.tsx` now show a "Live market prices" badge and read
+from this reader, falling back to the cached oracle if the live call
+fails. The combined health factor, per-leg cards, and anything that
+determines actual borrow capacity still read the cache — labeled
+explicitly in the UI as using "the protocol's cached price" — since
+that's the number deposit/borrow/liquidation actually enforce.
