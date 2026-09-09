@@ -63,56 +63,89 @@ async function main() {
   console.log("Balance:", ethers.formatEther(await ethers.provider.getBalance(deployer.address)), "HBAR\n");
 
   const configurator = await ethers.getContractAt("LendingPoolConfigurator", configuratorAddress);
+  const dataProviderPrecheck = await ethers.getContractAt("AaveProtocolDataProvider", dataProviderAddress);
 
-  const initInputs = [];
-  const strategyAddresses: Record<string, string> = {};
+  // Chunk size for batchInitReserve — 11-at-once exceeded Hedera's
+  // per-transaction gas limit (CONTRACT_REVERT_EXECUTED / INSUFFICIENT_GAS
+  // during estimateGas); the original 3-asset batch in
+  // deploy-lending-core.ts is the known-working size, so chunk at 3.
+  const CHUNK_SIZE = 3;
+
+  const initInputsAll: Array<{ input: unknown; stock: StockDef }> = [];
 
   for (const stock of stocks) {
     const assetAddress = requireContractAddress(NETWORK, stock.key);
 
-    const strategy = await (
-      await ethers.getContractFactory("DefaultReserveInterestRateStrategy")
-    ).deploy(
-      providerAddress,
-      RATE_STRATEGY_PARAMS.optimalUtilizationRate,
-      RATE_STRATEGY_PARAMS.baseVariableBorrowRate,
-      RATE_STRATEGY_PARAMS.variableRateSlope1,
-      RATE_STRATEGY_PARAMS.variableRateSlope2,
-      RATE_STRATEGY_PARAMS.stableRateSlope1,
-      RATE_STRATEGY_PARAMS.stableRateSlope2
-    );
-    await strategy.waitForDeployment();
-    const strategyAddress = await strategy.getAddress();
-    strategyAddresses[stock.key] = strategyAddress;
-    console.log(`  ${stock.symbol} interest rate strategy:`, strategyAddress);
+    // Idempotency: skip if this reserve was already initialized in a
+    // prior (partial) run of this script.
+    const [existingATokenAddress] = await dataProviderPrecheck.getReserveTokensAddresses(assetAddress);
+    if (existingATokenAddress !== ethers.ZeroAddress) {
+      console.log(`  ${stock.symbol}: reserve already initialized (aToken ${existingATokenAddress}) — skipping`);
+      saveContractAddress(NETWORK, `aToken_${stock.symbol}`, existingATokenAddress);
+      continue;
+    }
 
-    initInputs.push({
-      aTokenImpl: aTokenImplAddress,
-      stableDebtTokenImpl: stableDebtImplAddress,
-      variableDebtTokenImpl: variableDebtImplAddress,
-      underlyingAssetDecimals: stock.decimals,
-      interestRateStrategyAddress: strategyAddress,
-      underlyingAsset: assetAddress,
-      treasury: deployer.address,
-      incentivesController: ethers.ZeroAddress,
-      underlyingAssetName: stock.symbol,
-      aTokenName: `Stratus a${stock.symbol}`,
-      aTokenSymbol: `a${stock.symbol}`,
-      variableDebtTokenName: `Stratus variableDebt${stock.symbol}`,
-      variableDebtTokenSymbol: `variableDebt${stock.symbol}`,
-      stableDebtTokenName: `Stratus stableDebt${stock.symbol}`,
-      stableDebtTokenSymbol: `stableDebt${stock.symbol}`,
-      params: "0x",
+    // Idempotency: reuse a strategy address from a prior partial run if
+    // one was already saved, rather than deploying a new one every retry.
+    let strategyAddress: string;
+    try {
+      strategyAddress = requireContractAddress(NETWORK, `InterestRateStrategy_${stock.symbol}`);
+      console.log(`  ${stock.symbol} interest rate strategy (reused): ${strategyAddress}`);
+    } catch {
+      const strategy = await (
+        await ethers.getContractFactory("DefaultReserveInterestRateStrategy")
+      ).deploy(
+        providerAddress,
+        RATE_STRATEGY_PARAMS.optimalUtilizationRate,
+        RATE_STRATEGY_PARAMS.baseVariableBorrowRate,
+        RATE_STRATEGY_PARAMS.variableRateSlope1,
+        RATE_STRATEGY_PARAMS.variableRateSlope2,
+        RATE_STRATEGY_PARAMS.stableRateSlope1,
+        RATE_STRATEGY_PARAMS.stableRateSlope2
+      );
+      await strategy.waitForDeployment();
+      strategyAddress = await strategy.getAddress();
+      // Saved immediately (not batched at the end) so a later failure in
+      // this run doesn't lose track of what's already been paid for.
+      saveContractAddress(NETWORK, `InterestRateStrategy_${stock.symbol}`, strategyAddress);
+      console.log(`  ${stock.symbol} interest rate strategy:`, strategyAddress);
+    }
+
+    initInputsAll.push({
+      stock,
+      input: {
+        aTokenImpl: aTokenImplAddress,
+        stableDebtTokenImpl: stableDebtImplAddress,
+        variableDebtTokenImpl: variableDebtImplAddress,
+        underlyingAssetDecimals: stock.decimals,
+        interestRateStrategyAddress: strategyAddress,
+        underlyingAsset: assetAddress,
+        treasury: deployer.address,
+        incentivesController: ethers.ZeroAddress,
+        underlyingAssetName: stock.symbol,
+        aTokenName: `Stratus a${stock.symbol}`,
+        aTokenSymbol: `a${stock.symbol}`,
+        variableDebtTokenName: `Stratus variableDebt${stock.symbol}`,
+        variableDebtTokenSymbol: `variableDebt${stock.symbol}`,
+        stableDebtTokenName: `Stratus stableDebt${stock.symbol}`,
+        stableDebtTokenSymbol: `stableDebt${stock.symbol}`,
+        params: "0x",
+      },
     });
   }
 
-  console.log("\n=== batchInitReserve for all 11 individual stocks ===");
-  const initTx = await configurator.batchInitReserve(initInputs);
-  const initReceipt = await initTx.wait();
-  console.log(`  batchInitReserve tx: ${initTx.hash} (gas used: ${initReceipt!.gasUsed})`);
+  console.log(`\n=== batchInitReserve for ${initInputsAll.length} pending reserve(s), in chunks of ${CHUNK_SIZE} ===`);
+  for (let i = 0; i < initInputsAll.length; i += CHUNK_SIZE) {
+    const chunk = initInputsAll.slice(i, i + CHUNK_SIZE);
+    const symbols = chunk.map((c) => c.stock.symbol).join(", ");
+    console.log(`  Batch [${symbols}]...`);
+    const initTx = await configurator.batchInitReserve(chunk.map((c) => c.input));
+    const initReceipt = await initTx.wait();
+    console.log(`    tx: ${initTx.hash} (gas used: ${initReceipt!.gasUsed})`);
+  }
 
   console.log("\n=== Configuring risk parameters (collateral-enabled, no borrowing) ===");
-  for (const stock of stocks) {
+  for (const { stock } of initInputsAll) {
     const assetAddress = requireContractAddress(NETWORK, stock.key);
     const tx = await configurator.configureReserveAsCollateral(
       assetAddress,
@@ -122,11 +155,6 @@ async function main() {
     );
     await tx.wait();
     console.log(`  ${stock.symbol}: LTV=${LTV_BPS / 100}% threshold=${LIQUIDATION_THRESHOLD_BPS / 100}% bonus=${(LIQUIDATION_BONUS_BPS - 10_000) / 100}%`);
-  }
-
-  console.log("\n=== Saving deployment ===");
-  for (const stock of stocks) {
-    saveContractAddress(NETWORK, `InterestRateStrategy_${stock.symbol}`, strategyAddresses[stock.key]);
   }
 
   console.log("\n=== aToken addresses (whitelist these on each ATS control list) ===");

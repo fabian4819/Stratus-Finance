@@ -1,6 +1,6 @@
 {
   "network": "hederaTestnet",
-  "updatedAt": "2026-09-09T08:29:43.854Z",
+  "updatedAt": "2026-09-09T08:34:08.064Z",
   "contracts": {
     "GoldToken": "0xcF19378058EC9DFD25975527BDf7F68faeC2C7fc",
     "StockIndexToken": "0x59E3908069993cDDbD3C83479c1aFc92242c0d3A",
@@ -41,7 +41,18 @@
     "BrkbToken": "0x88fdaeF6faF15022612cA2b2434709560107233f",
     "CvxToken": "0x1d5c93544fF29E03572c1e267093cE62feffBEeC",
     "AmdToken": "0x081ada9f9F6b14d4f14C79ef637180F6A5649690",
-    "PltrToken": "0xEA9644ECAdE5E12E4B4db783f54EE0dD34DF4FE2"
+    "PltrToken": "0xEA9644ECAdE5E12E4B4db783f54EE0dD34DF4FE2",
+    "InterestRateStrategy_AAPL-x": "0x74Ac626c255Fc166a634e3023267Ad7955fFA36A",
+    "InterestRateStrategy_TSLA-x": "0xBB73aa3b344929b0fCF428172B9410E9A49FeBea",
+    "InterestRateStrategy_MSFT-x": "0x310F4C606F3Ee5ebB59007BD6527A1e514ed1340",
+    "InterestRateStrategy_NVDA-x": "0x86DF96A18601505834DcB55Ac83a2449F693b9c4",
+    "InterestRateStrategy_GOOGL-x": "0xa889B1B99A33955Ae9ED1d7c859bAF196D1c55d8",
+    "InterestRateStrategy_AMZN-x": "0x29c5a8c15546549df4b4F56A971D1EA8F49e9913",
+    "InterestRateStrategy_META-x": "0xe040C0860fBb4C720CD3f35Be0ac6107c2Ca823E",
+    "InterestRateStrategy_BRKB-x": "0x3eFA15A00f06a4E7FCaa0e8bA201C31Ab9906887",
+    "InterestRateStrategy_CVX-x": "0x75A570811154f07d4B74F17062f9820520b5959C",
+    "InterestRateStrategy_AMD-x": "0xb5Ba10149Ab7a30CAd06126F967b8865D8bffAE1",
+    "InterestRateStrategy_PLTR-x": "0x51559FEBB2Cede29ae4dD56dA2b1B1310bCa90D1"
   },
   "meta": {
     "gate1RoundTrip": {
