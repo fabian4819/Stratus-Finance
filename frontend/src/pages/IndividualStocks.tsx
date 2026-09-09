@@ -128,24 +128,33 @@ export function IndividualStocks() {
           <thead>
             <tr className="border-b border-slate-200 text-left text-slate-500">
               <th className="px-4 py-2 font-medium">Stock</th>
-              <th className="px-4 py-2 font-medium text-right">Price</th>
-              {address && <th className="px-4 py-2 font-medium text-right">Wallet</th>}
-              {address && <th className="px-4 py-2 font-medium text-right">Deposited</th>}
+              <th className="px-4 py-2 font-medium text-right">Price (per share)</th>
+              {address && <th className="px-4 py-2 font-medium text-right">Wallet (shares)</th>}
+              {address && <th className="px-4 py-2 font-medium text-right">Deposited (shares)</th>}
+              {address && <th className="px-4 py-2 font-medium text-right">Deposited value</th>}
             </tr>
           </thead>
           <tbody>
-            {rows.map(({ stock, price, walletBalance, aTokenBalance }) => (
-              <tr key={stock.symbol} className="border-b border-slate-100 last:border-0">
-                <td className="px-4 py-2">{stock.displayName}</td>
-                <td className="px-4 py-2 text-right">{price !== null ? `$${Number(formatEther(price)).toFixed(2)}` : "—"}</td>
-                {address && (
-                  <td className="px-4 py-2 text-right">{walletBalance !== null ? Number(formatEther(walletBalance)).toFixed(2) : "—"}</td>
-                )}
-                {address && (
-                  <td className="px-4 py-2 text-right">{aTokenBalance !== null ? Number(formatEther(aTokenBalance)).toFixed(2) : "—"}</td>
-                )}
-              </tr>
-            ))}
+            {rows.map(({ stock, price, walletBalance, aTokenBalance }) => {
+              const depositedValueUsd = price !== null && aTokenBalance !== null ? (aTokenBalance * price) / 10n ** 18n : null;
+              return (
+                <tr key={stock.symbol} className="border-b border-slate-100 last:border-0">
+                  <td className="px-4 py-2">{stock.displayName}</td>
+                  <td className="px-4 py-2 text-right">{price !== null ? `$${Number(formatEther(price)).toFixed(2)}` : "—"}</td>
+                  {address && (
+                    <td className="px-4 py-2 text-right">{walletBalance !== null ? Number(formatEther(walletBalance)).toFixed(2) : "—"}</td>
+                  )}
+                  {address && (
+                    <td className="px-4 py-2 text-right">{aTokenBalance !== null ? Number(formatEther(aTokenBalance)).toFixed(2) : "—"}</td>
+                  )}
+                  {address && (
+                    <td className="px-4 py-2 text-right font-medium">
+                      {depositedValueUsd !== null ? `$${Number(formatEther(depositedValueUsd)).toFixed(2)}` : "—"}
+                    </td>
+                  )}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -168,7 +177,7 @@ export function IndividualStocks() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Amount</label>
+              <label className="block text-sm font-medium mb-1">Amount (shares, not USD)</label>
               <input
                 type="number"
                 min="0"
