@@ -46,13 +46,18 @@ written.
   actual upgradeable-proxy flow — not reimplemented, not a mock.
 - ATS tokenization: real, compliance-gated diamond contracts — not a
   placeholder.
-- Price oracle: **live** on Chainlink (real, push-based, verified fresh);
-  **as-designed** on Pyth (real integration, blocked by infrastructure
-  outside this repo — documented, not hidden). See
-  `docs/phase-2-findings.md`.
-- Underlying assets: GOLD-x tracks HBAR/USD, STOCK-x tracks ETH/USD — both
-  disclosed substitutes, since no commodity/equity feed exists on Hedera
-  testnet from either oracle checked. Not real gold or equity prices.
+- Price oracle: **live** on RedStone (real, signed pull-oracle feeds,
+  verified on-chain); Chainlink (real, push-based, verified fresh) and
+  Pyth (real integration, blocked by infrastructure outside this repo)
+  both stay in the codebase as working/documented alternates. See
+  `docs/phase-2-findings.md` and `docs/phase-3-oracle-research.md`.
+- Underlying assets: GOLD-x tracks the real gold spot price (RedStone's
+  `XAU` feed), STOCK-x tracks the real S&P 500 index level (RedStone's
+  `USA500.Y` feed) — not substitutes. Checked every oracle actually
+  integrated with Hedera (Pyth, Chainlink, Supra) first; all three lack
+  real-world-asset feeds on Hedera testnet specifically — documented in
+  `docs/phase-3-oracle-research.md` — before RedStone's pull model (no
+  Hedera-specific deployment needed) closed the gap.
 - Liquidation stress mechanism: an owner-gated, event-logged demo offset
   (`setDemoOffsetBps`) — disclosed via a persistent UI banner whenever
   active, not a silent price manipulation.

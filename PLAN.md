@@ -252,3 +252,17 @@ Phases 0–1 will generate real friction with ATS (control lists vs. DeFi contra
 - [ ] Position recomposed back to the basket token after repayment.
 - [ ] UI shows per-component health; demo stress is clearly labelled.
 - [ ] README with addresses, demo video, ATS upstream contribution filed.
+
+---
+
+## 10. Post-submission-prep addendum: real RWA prices via RedStone
+
+The Gate 2/3 narrative above (Pyth → Chainlink pivot) reflects what
+happened at that point in the build and is left as-is. Afterward, GOLD-x
+(HBAR/USD) and STOCK-x (ETH/USD) were upgraded to real gold and real
+S&P 500 index prices via RedStone's pull-oracle model — closing the
+disclosed-substitute gap risk #3 in the register above flagged as
+"Med/Med" and accepted. Full research trail (why Pyth/Chainlink/Supra all
+lack RWA feeds on Hedera testnet, and the architecture that makes
+RedStone work without a Hedera-specific deployment) in
+`docs/phase-3-oracle-research.md`.

@@ -70,18 +70,24 @@ fluke."
 
 ## 5. Close (15s)
 
-One sentence: real ATS tokens, a real forked Aave v2 pool deployed
-through the actual upgradeable-proxy flow, real liquidation mechanics —
-the only thing simulated is the market move that triggers it, and that's
-disclosed on-screen the whole time via the demo-stress banner. Mention in
-passing that the originally-designed oracle was Pyth, and the pivot to
-Chainlink's live feeds after hitting real Hedera/Pyth infrastructure
-issues is documented start to finish in `docs/phase-2-findings.md` — worth
-a beat if the pitch has room, since it's a real engineering story, not
-just a happy-path build.
+One sentence: real ATS tokens tracking real gold and real S&P 500 prices
+(RedStone), a real forked Aave v2 pool deployed through the actual
+upgradeable-proxy flow, real liquidation mechanics — the only thing
+simulated is the market move that triggers it, and that's disclosed
+on-screen the whole time via the demo-stress banner. Mention in passing
+that getting real prices took checking every oracle actually integrated
+with Hedera (Pyth blocked, Chainlink and Supra both crypto-only on Hedera
+testnet) before RedStone's differently-architected pull model closed the
+gap — documented start to finish in `docs/phase-2-findings.md` and
+`docs/phase-3-oracle-research.md` — worth a beat if the pitch has room,
+since it's a real engineering story, not just a happy-path build.
 
 ## Recording checklist
 
+- [ ] Run `cd contracts && npx ts-node script/update-redstone-prices.ts`
+      shortly before filming — RedStone is a pull oracle (see
+      `docs/phase-3-oracle-research.md`), prices only refresh when this
+      runs, and cached prices go stale after 1 hour (`maxPriceAge`).
 - [x] Gates 1–5 all passed for real — see `PLAN.md` and `README.md` §9.
 - [x] `deployments/hederaTestnet.json` has every address and every
       verification tx hash, including both liquidation runs
