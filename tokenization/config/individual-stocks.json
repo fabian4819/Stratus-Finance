@@ -1,0 +1,115 @@
+{
+  "comment": "Individual real-stock reserves, added alongside (not replacing) the original GOLD-x/STOCK-x basket — see docs/phase-4-individual-stocks.md. Each is deposited/borrowed against directly in the pool, not wrapped by StratusBasketToken. All 11 tickers below were confirmed live against RedStone's redstone-primary-prod data service by cross-checking a broad list of major US equities against the raw catalog response — these are every recognizable major-name match found, not an arbitrary subset (docs/phase-3-oracle-research.md / docs/phase-4-individual-stocks.md). isinPrefix11 follows the same pattern as tokenization/config/assets.json — checksum computed at runtime.",
+  "assets": [
+    {
+      "key": "AaplToken",
+      "name": "Stratus Apple Tracker",
+      "symbol": "AAPL-x",
+      "isinPrefix11": "USSTRATUSAP",
+      "currency": "USD",
+      "numberOfShares": "1000000",
+      "decimals": 18,
+      "redstoneFeedId": "AAPL"
+    },
+    {
+      "key": "TslaToken",
+      "name": "Stratus Tesla Tracker",
+      "symbol": "TSLA-x",
+      "isinPrefix11": "USSTRATUSTS",
+      "currency": "USD",
+      "numberOfShares": "1000000",
+      "decimals": 18,
+      "redstoneFeedId": "TSLA"
+    },
+    {
+      "key": "MsftToken",
+      "name": "Stratus Microsoft Tracker",
+      "symbol": "MSFT-x",
+      "isinPrefix11": "USSTRATUSMS",
+      "currency": "USD",
+      "numberOfShares": "1000000",
+      "decimals": 18,
+      "redstoneFeedId": "MSFT"
+    },
+    {
+      "key": "NvdaToken",
+      "name": "Stratus Nvidia Tracker",
+      "symbol": "NVDA-x",
+      "isinPrefix11": "USSTRATUSNV",
+      "currency": "USD",
+      "numberOfShares": "1000000",
+      "decimals": 18,
+      "redstoneFeedId": "NVDA"
+    },
+    {
+      "key": "GooglToken",
+      "name": "Stratus Alphabet Tracker",
+      "symbol": "GOOGL-x",
+      "isinPrefix11": "USSTRATUSGO",
+      "currency": "USD",
+      "numberOfShares": "1000000",
+      "decimals": 18,
+      "redstoneFeedId": "GOOGL"
+    },
+    {
+      "key": "AmznToken",
+      "name": "Stratus Amazon Tracker",
+      "symbol": "AMZN-x",
+      "isinPrefix11": "USSTRATUSAM",
+      "currency": "USD",
+      "numberOfShares": "1000000",
+      "decimals": 18,
+      "redstoneFeedId": "AMZN"
+    },
+    {
+      "key": "MetaToken",
+      "name": "Stratus Meta Tracker",
+      "symbol": "META-x",
+      "isinPrefix11": "USSTRATUSME",
+      "currency": "USD",
+      "numberOfShares": "1000000",
+      "decimals": 18,
+      "redstoneFeedId": "META"
+    },
+    {
+      "key": "BrkbToken",
+      "name": "Stratus Berkshire Hathaway Tracker",
+      "symbol": "BRKB-x",
+      "isinPrefix11": "USSTRATUSBR",
+      "currency": "USD",
+      "numberOfShares": "1000000",
+      "decimals": 18,
+      "redstoneFeedId": "BRKB"
+    },
+    {
+      "key": "CvxToken",
+      "name": "Stratus Chevron Tracker",
+      "symbol": "CVX-x",
+      "isinPrefix11": "USSTRATUSCV",
+      "currency": "USD",
+      "numberOfShares": "1000000",
+      "decimals": 18,
+      "redstoneFeedId": "CVX"
+    },
+    {
+      "key": "AmdToken",
+      "name": "Stratus AMD Tracker",
+      "symbol": "AMD-x",
+      "isinPrefix11": "USSTRATUSAD",
+      "currency": "USD",
+      "numberOfShares": "1000000",
+      "decimals": 18,
+      "redstoneFeedId": "AMD"
+    },
+    {
+      "key": "PltrToken",
+      "name": "Stratus Palantir Tracker",
+      "symbol": "PLTR-x",
+      "isinPrefix11": "USSTRATUSPL",
+      "currency": "USD",
+      "numberOfShares": "1000000",
+      "decimals": 18,
+      "redstoneFeedId": "PLTR"
+    }
+  ]
+}
