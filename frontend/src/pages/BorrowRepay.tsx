@@ -2,31 +2,34 @@ import { useEffect, useState, useCallback } from "react";
 import { formatEther, formatUnits, parseUnits, MaxUint256 } from "ethers";
 import { useWallet } from "../lib/WalletContext";
 import { addresses, addressesConfigured } from "../lib/addresses";
-import { getPool, getUsdc, getRiskView, getErc20, getOracle } from "../lib/contracts";
+import { getPool, getRiskView, getErc20, getOracle } from "../lib/contracts";
 import { individualStocks } from "../lib/individualStocks";
+import { borrowableAssets } from "../lib/borrowableAssets";
 
 const VARIABLE_RATE_MODE = 2;
-const USDC_DECIMALS = 6;
 
 interface StockCollateral {
   displayName: string;
   collateralValueUsd: bigint;
 }
 
-/** PLAN.md §Phase 5, Screen 3: borrow/repay USDC directly against the
- * pool (StratusVault is not in this path — see its contract docs).
- * Combined capacity is itemised per collateral source, not shown as one
- * blended number: Gold/S&P 500 Index via StratusRiskView (fixed 2-slot
- * view), plus any individual stock reserve (docs/phase-4-individual-stocks.md)
- * the user has actually deposited into — Aave v2's borrow() is
- * account-level, not tied to one collateral asset, so those contribute
- * to "Combined available to borrow" whether or not they're itemised;
- * verified with a real deposit-AAPL-x/borrow/repay/withdraw tx. */
+/** PLAN.md §Phase 5, Screen 3: borrow/repay directly against the pool
+ * (StratusVault is not in this path — see its contract docs). Any of 21
+ * assets (USDC + 20 top-market-cap crypto reserves, see
+ * docs/phase-5-crypto-borrow.md) can be borrowed — Aave v2's borrow() is
+ * account-level, not tied to one collateral asset, so whichever
+ * combination of Gold/S&P 500 Index/individual stocks a user has
+ * deposited all contribute to the same capacity. Combined capacity is
+ * itemised per collateral source: Gold/S&P 500 Index via StratusRiskView
+ * (fixed 2-slot view), plus any individual stock reserve the user has
+ * actually deposited into. */
 export function BorrowRepay() {
   const { signer, address, connect } = useWallet();
+  const [borrowSymbol, setBorrowSymbol] = useState(borrowableAssets[0]?.symbol ?? "USDC");
+  const [repaySymbol, setRepaySymbol] = useState(borrowableAssets[0]?.symbol ?? "USDC");
   const [borrowAmount, setBorrowAmount] = useState("1");
   const [repayAmount, setRepayAmount] = useState("1");
-  const [usdcBalance, setUsdcBalance] = useState<bigint | null>(null);
+  const [selectedBalance, setSelectedBalance] = useState<bigint | null>(null);
   const [accountData, setAccountData] = useState<{
     totalDebtUsd: bigint;
     availableBorrowsUsd: bigint;
@@ -37,20 +40,25 @@ export function BorrowRepay() {
   const [status, setStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  const repayAsset = borrowableAssets.find((a) => a.symbol === repaySymbol);
+  const borrowAsset = borrowableAssets.find((a) => a.symbol === borrowSymbol);
+
   const refresh = useCallback(async () => {
     if (!signer || !address) return;
     const pool = getPool(signer);
-    const usdc = getUsdc(signer);
     const riskView = getRiskView(signer);
     const oracle = getOracle(signer);
 
-    const [balance, data, risk] = await Promise.all([
-      usdc.balanceOf(address),
+    const [data, risk] = await Promise.all([
       pool.getUserAccountData(address),
       riskView.getUserRisk(address, addresses.goldToken, addresses.stockIndexToken),
     ]);
 
-    setUsdcBalance(balance);
+    if (repayAsset) {
+      const token = getErc20(repayAsset.tokenAddress, signer);
+      setSelectedBalance(await token.balanceOf(address));
+    }
+
     setAccountData({
       totalDebtUsd: data.totalDebtETH,
       availableBorrowsUsd: data.availableBorrowsETH,
@@ -83,21 +91,27 @@ export function BorrowRepay() {
       })
     );
     setStockCollateral(perStock.filter((s) => s.collateralValueUsd > 0n));
-  }, [signer, address]);
+  }, [signer, address, repayAsset]);
 
   useEffect(() => {
     refresh();
   }, [refresh]);
 
   async function handleBorrow() {
-    if (!signer || !address) return;
+    if (!signer || !address || !borrowAsset) return;
     setBusy(true);
     setStatus(null);
     try {
       const pool = getPool(signer);
-      const tx = await pool.borrow(addresses.usdc, parseUnits(borrowAmount, USDC_DECIMALS), VARIABLE_RATE_MODE, 0, address);
+      const tx = await pool.borrow(
+        borrowAsset.tokenAddress,
+        parseUnits(borrowAmount, borrowAsset.decimals),
+        VARIABLE_RATE_MODE,
+        0,
+        address
+      );
       await tx.wait();
-      setStatus(`Borrowed ${borrowAmount} USDC. Tx: ${tx.hash.slice(0, 10)}...`);
+      setStatus(`Borrowed ${borrowAmount} ${borrowAsset.symbol}. Tx: ${tx.hash.slice(0, 10)}...`);
       await refresh();
     } catch (e) {
       setStatus(e instanceof Error ? e.message : "Borrow failed");
@@ -107,21 +121,21 @@ export function BorrowRepay() {
   }
 
   async function handleRepay() {
-    if (!signer || !address) return;
+    if (!signer || !address || !repayAsset) return;
     setBusy(true);
     setStatus(null);
     try {
       const pool = getPool(signer);
-      const usdc = getUsdc(signer);
+      const token = getErc20(repayAsset.tokenAddress, signer);
       const poolAddress = await pool.getAddress();
-      const amount = parseUnits(repayAmount, USDC_DECIMALS);
+      const amount = parseUnits(repayAmount, repayAsset.decimals);
 
-      setStatus("Approving USDC...");
-      await (await usdc.approve(poolAddress, amount)).wait();
+      setStatus(`Approving ${repayAsset.symbol}...`);
+      await (await token.approve(poolAddress, amount)).wait();
       setStatus("Repaying...");
-      const tx = await pool.repay(addresses.usdc, amount, VARIABLE_RATE_MODE, address);
+      const tx = await pool.repay(repayAsset.tokenAddress, amount, VARIABLE_RATE_MODE, address);
       await tx.wait();
-      setStatus(`Repaid ${repayAmount} USDC. Tx: ${tx.hash.slice(0, 10)}...`);
+      setStatus(`Repaid ${repayAmount} ${repayAsset.symbol}. Tx: ${tx.hash.slice(0, 10)}...`);
       await refresh();
     } catch (e) {
       setStatus(e instanceof Error ? e.message : "Repay failed");
@@ -134,7 +148,10 @@ export function BorrowRepay() {
 
   return (
     <div className="max-w-lg mx-auto p-6">
-      <h1 className="text-xl font-semibold mb-4">Borrow / Repay USDC</h1>
+      <h1 className="text-xl font-semibold mb-4">Borrow / Repay</h1>
+      <p className="text-sm text-slate-600 mb-4">
+        Borrow any of 21 assets (USDC or 20 top-market-cap crypto) against your deposited collateral.
+      </p>
 
       {!address ? (
         <button onClick={connect} className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white">
@@ -165,7 +182,7 @@ export function BorrowRepay() {
 
           <div className="rounded-lg border border-slate-200 p-4 mb-6 text-sm space-y-1">
             <div className="flex justify-between">
-              <span className="text-slate-500">Current debt</span>
+              <span className="text-slate-500">Current debt (all assets)</span>
               <span>{accountData ? `$${Number(formatEther(accountData.totalDebtUsd)).toFixed(2)}` : "—"}</span>
             </div>
             <div className="flex justify-between">
@@ -178,15 +195,22 @@ export function BorrowRepay() {
                   : "—"}
               </span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-slate-500">Your USDC balance</span>
-              <span>{usdcBalance !== null ? formatUnits(usdcBalance, USDC_DECIMALS) : "—"}</span>
-            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-1">Borrow (USDC)</label>
+              <label className="block text-sm font-medium mb-1">Borrow</label>
+              <select
+                value={borrowSymbol}
+                onChange={(e) => setBorrowSymbol(e.target.value)}
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm mb-2"
+              >
+                {borrowableAssets.map((a) => (
+                  <option key={a.symbol} value={a.symbol}>
+                    {a.displayName}
+                  </option>
+                ))}
+              </select>
               <input
                 type="number"
                 min="0"
@@ -203,7 +227,18 @@ export function BorrowRepay() {
               </button>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Repay (USDC)</label>
+              <label className="block text-sm font-medium mb-1">Repay</label>
+              <select
+                value={repaySymbol}
+                onChange={(e) => setRepaySymbol(e.target.value)}
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm mb-2"
+              >
+                {borrowableAssets.map((a) => (
+                  <option key={a.symbol} value={a.symbol}>
+                    {a.displayName}
+                  </option>
+                ))}
+              </select>
               <input
                 type="number"
                 min="0"
@@ -220,6 +255,9 @@ export function BorrowRepay() {
               </button>
             </div>
           </div>
+          <p className="mt-2 text-xs text-slate-500">
+            Your {repayAsset?.symbol ?? "—"} balance: {selectedBalance !== null && repayAsset ? formatUnits(selectedBalance, repayAsset.decimals) : "—"}
+          </p>
           {status && <p className="mt-3 text-xs text-slate-600 break-all">{status}</p>}
         </>
       )}
