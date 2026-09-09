@@ -1,6 +1,6 @@
 {
   "network": "hederaTestnet",
-  "updatedAt": "2026-09-09T08:46:22.289Z",
+  "updatedAt": "2026-09-09T16:17:27.449Z",
   "contracts": {
     "GoldToken": "0xcF19378058EC9DFD25975527BDf7F68faeC2C7fc",
     "StockIndexToken": "0x59E3908069993cDDbD3C83479c1aFc92242c0d3A",
@@ -63,7 +63,8 @@
     "aToken_BRKB-x": "0x18a60ca8002A681b0bB0771a58146116c96230b4",
     "aToken_CVX-x": "0x3209c6cab45C4FAC2d5E8fD810ce8562EC2FC191",
     "aToken_AMD-x": "0x586e6568ac04c245854bb06F39CaF20c3C1A0B9E",
-    "aToken_PLTR-x": "0x4351a36D6a5D54bf7210B5720d00C43c21887534"
+    "aToken_PLTR-x": "0x4351a36D6a5D54bf7210B5720d00C43c21887534",
+    "StratusLivePriceReader": "0x4bD75A26965a94f3b0E3845d31Ed5cc2dc50A5eE"
   },
   "meta": {
     "gate1RoundTrip": {
