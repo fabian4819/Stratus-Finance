@@ -52,6 +52,15 @@ function getReaderContract(): Contract {
   return readerContract;
 }
 
+// In-flight request de-dup, keyed by the exact feed-id set. Without this,
+// React 18 StrictMode's intentional double-invoke of mount effects (dev
+// mode only) fires two near-simultaneous fetchLivePrices() calls against
+// the same underlying ethers-v5 Contract/Provider instance, and one of
+// the two can silently fail — the page then shows "—" until the next
+// 15s poll quietly fixes it. Sharing one in-flight promise across both
+// callers removes the race entirely rather than just tolerating it.
+const inFlight = new Map<string, Promise<Record<string, bigint>>>();
+
 /**
  * Fetches live prices for the given RedStone feed ids in one wrapped
  * call (one gateway round-trip). Returns a map keyed by feed id, scaled
@@ -61,6 +70,18 @@ function getReaderContract(): Contract {
  * show "—", rather than crash the page.
  */
 export async function fetchLivePrices(feedIds: string[]): Promise<Record<string, bigint>> {
+  const key = [...feedIds].sort().join(",");
+  const existing = inFlight.get(key);
+  if (existing) return existing;
+
+  const promise = doFetchLivePrices(feedIds).finally(() => {
+    inFlight.delete(key);
+  });
+  inFlight.set(key, promise);
+  return promise;
+}
+
+async function doFetchLivePrices(feedIds: string[]): Promise<Record<string, bigint>> {
   const contract = getReaderContract();
   const wrapped = WrapperBuilder.wrap(contract as any).usingDataService({
     dataServiceId: "redstone-primary-prod",

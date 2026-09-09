@@ -77,7 +77,7 @@ export function RiskPanel() {
     // deposit/borrow/liquidation actually enforce — see
     // docs/phase-3-oracle-research.md for why that side can't be made
     // real-time the same way.
-    const interval = setInterval(refresh, 15_000);
+    const interval = setInterval(refresh, 6_000);
     return () => clearInterval(interval);
   }, [refresh]);
 

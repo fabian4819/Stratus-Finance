@@ -75,7 +75,7 @@ export function IndividualStocks() {
     // re-read too. Deposited value below is informational — the pool's
     // own math for deposit/borrow/liquidation uses its cached oracle,
     // which can differ slightly from this live number.
-    const interval = setInterval(refresh, 15_000);
+    const interval = setInterval(refresh, 6_000);
     return () => clearInterval(interval);
   }, [refresh]);
 
