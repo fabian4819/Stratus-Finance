@@ -10,13 +10,16 @@ export function WalletConnectButton() {
         disabled={connecting}
         className={
           address
-            ? "rounded-xl border border-white/15 bg-white/[0.06] px-4 py-2 font-mono text-sm text-slate-100 backdrop-blur-xl hover:bg-white/[0.1] disabled:opacity-50"
+            ? "inline-flex items-center gap-2 rounded-xl border border-[var(--border)] bg-white px-3.5 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50 disabled:opacity-50"
             : "btn-primary disabled:opacity-50"
         }
       >
-        {address ? `${address.slice(0, 6)}...${address.slice(-4)}` : connecting ? "Connecting..." : "Connect Wallet"}
+        {address && <span className="h-2 w-2 rounded-full bg-emerald-500" />}
+        <span className={address ? "font-mono" : ""}>
+          {address ? `${address.slice(0, 6)}…${address.slice(-4)}` : connecting ? "Connecting…" : "Connect Wallet"}
+        </span>
       </button>
-      {error && <span className="text-xs text-rose-400">{error}</span>}
+      {error && <span className="text-xs text-rose-600">{error}</span>}
     </div>
   );
 }

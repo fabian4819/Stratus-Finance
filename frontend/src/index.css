@@ -3,62 +3,107 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --bg: #f7f8fa;
+    --card: #ffffff;
+    --border: #e8eaef;
+    --text: #0f172a;
+    --muted: #64748b;
+    --accent: #4f46e5;
+  }
+
+  html {
+    font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
   body {
-    @apply min-h-screen bg-slate-950 text-slate-200 antialiased;
-    /* Atmospheric "stratus layer" — colored light blooms behind the glass. */
-    background-image:
-      radial-gradient(55rem 55rem at 12% -12%, rgba(56, 189, 248, 0.18), transparent 60%),
-      radial-gradient(50rem 50rem at 100% -5%, rgba(129, 140, 248, 0.16), transparent 55%),
-      radial-gradient(45rem 45rem at 50% 118%, rgba(45, 212, 191, 0.12), transparent 60%);
-    background-attachment: fixed;
+    @apply min-h-screen bg-[var(--bg)] text-slate-900 antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply tracking-tight;
   }
 }
 
 @layer components {
-  .glass-panel {
-    @apply rounded-2xl border border-white/10 bg-white/[0.06] backdrop-blur-xl
-           shadow-[0_8px_32px_rgba(2,6,23,0.35)];
+  .card {
+    @apply rounded-2xl border border-[var(--border)] bg-white
+           shadow-[0_1px_2px_rgba(15,23,42,0.04),0_1px_3px_rgba(15,23,42,0.06)];
   }
 
-  .glass-input {
-    @apply w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-white
-           outline-none transition-colors placeholder:text-slate-500
-           focus:border-sky-400/60 focus:bg-white/[0.08];
+  .page-title {
+    @apply text-[26px] font-bold text-slate-900;
+  }
+  .page-subtitle {
+    @apply mt-1 text-sm text-slate-500;
+  }
+  .section-title {
+    @apply text-sm font-semibold text-slate-900;
   }
 
-  /* Native <select> menus render on an opaque surface — keep the options readable there. */
-  .glass-select {
-    @apply glass-input;
+  .stat-label {
+    @apply text-[13px] text-slate-500;
   }
-  .glass-select > option {
-    @apply bg-slate-900 text-white;
+  .stat-value {
+    @apply tabular-nums font-semibold text-slate-900;
+  }
+
+  .row {
+    @apply flex items-center justify-between text-sm;
+  }
+  .row-label {
+    @apply text-slate-500;
+  }
+  .row-value {
+    @apply tabular-nums text-slate-900;
   }
 
   .field-label {
-    @apply mb-1 block text-sm font-medium text-slate-300;
+    @apply mb-1.5 block text-[13px] font-medium text-slate-600;
   }
 
+  .input {
+    @apply w-full rounded-xl border border-[var(--border)] bg-white px-3.5 py-2.5 text-sm text-slate-900
+           outline-none transition placeholder:text-slate-400
+           focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100;
+  }
+  .select {
+    @apply input appearance-none pr-9;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%2364748b' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.85rem center;
+    background-size: 16px;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold
+           transition disabled:cursor-not-allowed disabled:opacity-40;
+  }
   .btn-primary {
-    @apply rounded-xl bg-sky-500 px-4 py-2 text-sm font-semibold text-slate-950 transition-colors
-           hover:bg-sky-400 disabled:opacity-40 disabled:hover:bg-sky-500;
+    @apply btn bg-indigo-600 text-white hover:bg-indigo-500 active:bg-indigo-700
+           disabled:hover:bg-indigo-600;
+  }
+  .btn-secondary {
+    @apply btn border border-[var(--border)] bg-white text-slate-800 hover:bg-slate-50;
   }
 
-  .btn-ghost {
-    @apply rounded-xl border border-white/15 bg-white/[0.03] px-4 py-2 text-sm font-semibold text-slate-100
-           transition-colors hover:bg-white/[0.08] disabled:opacity-40;
+  .badge {
+    @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium;
   }
-
-  .stat-row {
-    @apply flex justify-between text-sm;
+  .badge-green {
+    @apply badge bg-emerald-50 text-emerald-700;
   }
-  .stat-label {
-    @apply text-slate-400;
+  .badge-amber {
+    @apply badge bg-amber-50 text-amber-700;
   }
-  .stat-value {
-    @apply tabular-nums text-white;
+  .badge-rose {
+    @apply badge bg-rose-50 text-rose-700;
   }
 
   .inline-code {
-    @apply rounded bg-white/10 px-1 py-0.5 text-slate-200;
+    @apply rounded bg-slate-100 px-1 py-0.5 text-slate-700;
   }
 }

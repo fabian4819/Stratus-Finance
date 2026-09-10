@@ -1,8 +1,16 @@
 import { useEffect, useState, useCallback } from "react";
-import { formatEther, parseEther, MaxUint256 } from "ethers";
+import { formatEther, parseEther } from "ethers";
 import { useWallet } from "../lib/WalletContext";
 import { addresses, addressesConfigured } from "../lib/addresses";
 import { getBasketToken, getVault, getRiskView, getDataProvider } from "../lib/contracts";
+import {
+  PageHeader,
+  TokenBadge,
+  ConnectPrompt,
+  NotConfiguredNotice,
+  StatusLine,
+  HealthFactor,
+} from "../components/ui";
 
 interface ReserveConfig {
   ltvBps: bigint;
@@ -66,12 +74,12 @@ export function Deposit() {
       const vault = getVault(signer);
       const basketAmount = parseEther(amount);
 
-      setStatus("Approving vault...");
+      setStatus("Approving vault…");
       await (await basket.approve(vaultAddress, basketAmount)).wait();
-      setStatus("Depositing (decomposing into isolated reserves)...");
+      setStatus("Depositing (decomposing into isolated reserves)…");
       const tx = await vault.depositBasket(basketAmount);
       await tx.wait();
-      setStatus(`Deposited ${amount} sETF. Tx: ${tx.hash.slice(0, 10)}...`);
+      setStatus(`Deposited ${amount} sETF. Tx ${tx.hash.slice(0, 10)}…`);
       await refresh();
     } catch (e) {
       setStatus(e instanceof Error ? e.message : "Deposit failed");
@@ -82,81 +90,85 @@ export function Deposit() {
 
   if (!addressesConfigured()) return <NotConfiguredNotice />;
 
-  const labels = ["Gold reserve", "S&P 500 Index reserve"];
+  const legs = [
+    { symbol: "GOLD", label: "Gold reserve" },
+    { symbol: "SPX", label: "S&P 500 Index reserve" },
+  ];
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <h1 className="mb-2 text-2xl font-semibold tracking-tight text-white">Deposit &amp; Decompose</h1>
-      <p className="mb-6 text-sm text-slate-400">
-        Depositing your basket token splits it into two isolated reserve positions — each with independent risk
-        parameters. A price move in one leg never forces liquidation of the other.
-      </p>
+    <div>
+      <PageHeader
+        title="Deposit & decompose"
+        subtitle="Depositing your basket token splits it into two isolated reserve positions, each with independent risk parameters. A price move in one leg never forces liquidation of the other."
+      />
 
       {!address ? (
-        <button onClick={connect} className="btn-primary">
-          Connect wallet to continue
-        </button>
+        <ConnectPrompt onConnect={connect} label="Connect your wallet to deposit." />
       ) : (
-        <>
-          <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {labels.map((label, i) => {
-              const c = risk?.components[i];
-              const cfg = configs?.[i];
-              return (
-                <ReserveCard
-                  key={label}
-                  label={label}
-                  ltvBps={cfg?.ltvBps}
-                  thresholdBps={cfg?.liquidationThresholdBps}
-                  collateralValueUsd={c?.collateralValueUsd}
-                  healthFactor={c?.componentHealthFactor}
-                />
-              );
-            })}
-          </div>
-
-          {risk && (
-            <div className="glass-panel mb-6 flex justify-between p-4 text-sm">
-              <span className="stat-label">Combined health factor (real, enforced by the pool)</span>
-              <span className="stat-value font-medium">{formatHealthFactor(risk.combinedHealthFactor)}</span>
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,380px)_1fr]">
+          <div className="card h-fit p-5">
+            <label className="field-label">Amount to deposit (sETF)</label>
+            <input
+              type="number"
+              min="0"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className="input mb-2 text-lg"
+            />
+            <div className="mb-4 flex items-center justify-between text-xs text-slate-500">
+              <span>Wallet balance</span>
+              <button
+                type="button"
+                onClick={() => basketBalance !== null && setAmount(formatEther(basketBalance))}
+                className="tabular-nums font-medium text-indigo-600 hover:underline"
+              >
+                {basketBalance !== null ? `${Number(formatEther(basketBalance)).toFixed(4)} sETF` : "—"}
+              </button>
             </div>
-          )}
-
-          <div className="glass-panel mb-4 flex justify-between p-4 text-sm">
-            <span className="stat-label">Your sETF balance</span>
-            <span className="stat-value">{basketBalance !== null ? formatEther(basketBalance) : "—"}</span>
+            <button onClick={handleDeposit} disabled={busy || !amount} className="btn-primary w-full">
+              {busy ? "Depositing…" : "Approve & Deposit"}
+            </button>
+            <StatusLine status={status} />
           </div>
 
-          <label className="field-label">Amount to deposit (sETF)</label>
-          <input
-            type="number"
-            min="0"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            className="glass-input mb-4"
-          />
-          <button onClick={handleDeposit} disabled={busy || !amount} className="btn-primary w-full">
-            {busy ? "Depositing..." : "Approve + Deposit"}
-          </button>
-          {status && <p className="mt-3 break-all text-xs text-slate-400">{status}</p>}
-        </>
+          <div className="space-y-5">
+            <div className="card flex items-center justify-between p-5">
+              <div>
+                <div className="stat-label">Combined health factor</div>
+                <div className="mt-0.5 text-xs text-slate-400">Real, enforced by the pool</div>
+              </div>
+              <HealthFactor hf={risk?.combinedHealthFactor} size="lg" />
+            </div>
+
+            <div className="grid gap-5 sm:grid-cols-2">
+              {legs.map((leg, i) => (
+                <ReserveCard
+                  key={leg.symbol}
+                  symbol={leg.symbol}
+                  label={leg.label}
+                  ltvBps={configs?.[i]?.ltvBps}
+                  thresholdBps={configs?.[i]?.liquidationThresholdBps}
+                  collateralValueUsd={risk?.components[i]?.collateralValueUsd}
+                  healthFactor={risk?.components[i]?.componentHealthFactor}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
 }
 
-function formatHealthFactor(hf: bigint): string {
-  if (hf >= MaxUint256 / 2n) return "MAX (no debt)";
-  return Number(formatEther(hf)).toFixed(2);
-}
-
 function ReserveCard({
+  symbol,
   label,
   ltvBps,
   thresholdBps,
   collateralValueUsd,
   healthFactor,
 }: {
+  symbol: string;
   label: string;
   ltvBps?: bigint;
   thresholdBps?: bigint;
@@ -164,45 +176,36 @@ function ReserveCard({
   healthFactor?: bigint;
 }) {
   return (
-    <div className="glass-panel p-4">
-      <div className="mb-2 text-sm font-medium text-white">{label}</div>
-      <dl className="space-y-1 text-xs text-slate-400">
-        <div className="flex justify-between">
-          <dt>LTV</dt>
-          <dd className="tabular-nums text-slate-200">{ltvBps !== undefined ? `${Number(ltvBps) / 100}%` : "—"}</dd>
-        </div>
-        <div className="flex justify-between">
-          <dt>Liquidation threshold</dt>
-          <dd className="tabular-nums text-slate-200">
-            {thresholdBps !== undefined ? `${Number(thresholdBps) / 100}%` : "—"}
-          </dd>
-        </div>
-        <div className="flex justify-between">
-          <dt>Collateral value</dt>
-          <dd className="tabular-nums text-slate-200">
-            {collateralValueUsd !== undefined ? `$${Number(formatEther(collateralValueUsd)).toFixed(2)}` : "—"}
-          </dd>
-        </div>
-        <div className="flex justify-between">
-          <dt>Component health factor*</dt>
-          <dd className="tabular-nums text-slate-200">
-            {healthFactor !== undefined ? formatHealthFactor(healthFactor) : "—"}
-          </dd>
+    <div className="card p-5">
+      <div className="mb-3 flex items-center gap-2.5">
+        <TokenBadge symbol={symbol} size={28} />
+        <span className="text-sm font-semibold text-slate-900">{label}</span>
+      </div>
+      <dl className="space-y-2 text-sm">
+        <Row label="Collateral value">
+          {collateralValueUsd !== undefined ? `$${Number(formatEther(collateralValueUsd)).toFixed(2)}` : "—"}
+        </Row>
+        <Row label="Max LTV">{ltvBps !== undefined ? `${Number(ltvBps) / 100}%` : "—"}</Row>
+        <Row label="Liquidation threshold">
+          {thresholdBps !== undefined ? `${Number(thresholdBps) / 100}%` : "—"}
+        </Row>
+        <div className="row border-t border-[var(--border)] pt-2">
+          <span className="row-label">Component health factor*</span>
+          <HealthFactor hf={healthFactor} />
         </div>
       </dl>
-      <p className="mt-2 text-[10px] text-slate-500">
-        *Heuristic — see combined health factor for the real, enforced number.
+      <p className="mt-3 text-[11px] text-slate-400">
+        *Heuristic — the combined health factor above is the real, enforced number.
       </p>
     </div>
   );
 }
 
-function NotConfiguredNotice() {
+function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="glass-panel mx-auto max-w-lg p-6 text-sm text-slate-400">
-      Contract addresses not configured — copy <code className="inline-code">deployments/hederaTestnet.json</code>{" "}
-      values into <code className="inline-code">frontend/.env</code> (see{" "}
-      <code className="inline-code">.env.example</code>).
+    <div className="row">
+      <span className="row-label">{label}</span>
+      <span className="row-value">{children}</span>
     </div>
   );
 }

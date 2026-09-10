@@ -1,10 +1,18 @@
 import { useEffect, useState, useCallback } from "react";
-import { formatEther, formatUnits, parseUnits, MaxUint256 } from "ethers";
+import { formatEther, formatUnits, parseUnits } from "ethers";
 import { useWallet } from "../lib/WalletContext";
 import { addresses, addressesConfigured } from "../lib/addresses";
 import { getPool, getRiskView, getErc20, getOracle } from "../lib/contracts";
 import { individualStocks } from "../lib/individualStocks";
 import { borrowableAssets } from "../lib/borrowableAssets";
+import {
+  PageHeader,
+  TokenBadge,
+  ConnectPrompt,
+  NotConfiguredNotice,
+  StatusLine,
+  HealthFactor,
+} from "../components/ui";
 
 const VARIABLE_RATE_MODE = 2;
 
@@ -19,10 +27,7 @@ interface StockCollateral {
  * docs/phase-5-crypto-borrow.md) can be borrowed — Aave v2's borrow() is
  * account-level, not tied to one collateral asset, so whichever
  * combination of Gold/S&P 500 Index/individual stocks a user has
- * deposited all contribute to the same capacity. Combined capacity is
- * itemised per collateral source: Gold/S&P 500 Index via StratusRiskView
- * (fixed 2-slot view), plus any individual stock reserve the user has
- * actually deposited into. */
+ * deposited all contribute to the same capacity. */
 export function BorrowRepay() {
   const { signer, address, connect } = useWallet();
   const [borrowSymbol, setBorrowSymbol] = useState(borrowableAssets[0]?.symbol ?? "USDC");
@@ -65,20 +70,15 @@ export function BorrowRepay() {
       healthFactor: data.healthFactor,
     });
 
-    // Itemise combined capacity as each component's collateral value ×
-    // its own LTV — not a single blended number. Mirrors StratusRiskView's
-    // per-component figures, computed here from the same underlying data.
     const gold = risk.components[0];
     const stock = risk.components[1];
     setComponentCapacity({ gold: gold.collateralValueUsd, stock: stock.collateralValueUsd });
 
     // StratusRiskView is a fixed 2-slot view (Gold + S&P 500 Index only) —
     // individual stock collateral isn't in it, but it DOES contribute to
-    // "Combined available to borrow" above (pool-level, asset-agnostic).
-    // Compute each stock's own collateral value client-side (aToken
-    // balance × oracle price, same math StratusRiskView does internally)
-    // so a user who deposited one can see where their capacity is coming
-    // from, without needing a contract change.
+    // "Available to borrow" (pool-level, asset-agnostic). Compute each
+    // stock's own collateral value client-side (aToken balance × oracle
+    // price) so a depositor can see where their capacity comes from.
     const perStock = await Promise.all(
       individualStocks.map(async (s) => {
         const aToken = getErc20(s.aTokenAddress, signer);
@@ -111,7 +111,7 @@ export function BorrowRepay() {
         address
       );
       await tx.wait();
-      setStatus(`Borrowed ${borrowAmount} ${borrowAsset.symbol}. Tx: ${tx.hash.slice(0, 10)}...`);
+      setStatus(`Borrowed ${borrowAmount} ${borrowAsset.symbol}. Tx ${tx.hash.slice(0, 10)}…`);
       await refresh();
     } catch (e) {
       setStatus(e instanceof Error ? e.message : "Borrow failed");
@@ -130,12 +130,12 @@ export function BorrowRepay() {
       const poolAddress = await pool.getAddress();
       const amount = parseUnits(repayAmount, repayAsset.decimals);
 
-      setStatus(`Approving ${repayAsset.symbol}...`);
+      setStatus(`Approving ${repayAsset.symbol}…`);
       await (await token.approve(poolAddress, amount)).wait();
-      setStatus("Repaying...");
+      setStatus("Repaying…");
       const tx = await pool.repay(repayAsset.tokenAddress, amount, VARIABLE_RATE_MODE, address);
       await tx.wait();
-      setStatus(`Repaid ${repayAmount} ${repayAsset.symbol}. Tx: ${tx.hash.slice(0, 10)}...`);
+      setStatus(`Repaid ${repayAmount} ${repayAsset.symbol}. Tx ${tx.hash.slice(0, 10)}…`);
       await refresh();
     } catch (e) {
       setStatus(e instanceof Error ? e.message : "Repay failed");
@@ -146,132 +146,155 @@ export function BorrowRepay() {
 
   if (!addressesConfigured()) return <NotConfiguredNotice />;
 
+  const usd = (v: bigint | undefined) => (v !== undefined ? `$${Number(formatEther(v)).toFixed(2)}` : "—");
+
   return (
-    <div className="mx-auto max-w-lg">
-      <h1 className="mb-2 text-2xl font-semibold tracking-tight text-white">Borrow / Repay</h1>
-      <p className="mb-6 text-sm text-slate-400">
-        Borrow any of 21 assets (USDC or 20 top-market-cap crypto) against your deposited collateral.
-      </p>
+    <div>
+      <PageHeader
+        title="Borrow"
+        subtitle="Borrow any of 21 assets — USDC or 20 top-market-cap crypto — against whatever collateral you've deposited."
+      />
 
       {!address ? (
-        <button onClick={connect} className="btn-primary">
-          Connect wallet to continue
-        </button>
+        <ConnectPrompt onConnect={connect} label="Connect your wallet to borrow." />
       ) : (
-        <>
-          <div className="glass-panel mb-4 p-4 text-sm">
-            <div className="stat-row mb-1">
-              <span className="stat-label">From Gold leg</span>
-              <span className="stat-value">
-                {componentCapacity ? `$${Number(formatEther(componentCapacity.gold)).toFixed(2)}` : "—"} collateral
-              </span>
-            </div>
-            <div className="stat-row mb-1">
-              <span className="stat-label">From S&amp;P 500 Index leg</span>
-              <span className="stat-value">
-                {componentCapacity ? `$${Number(formatEther(componentCapacity.stock)).toFixed(2)}` : "—"} collateral
-              </span>
-            </div>
-            {stockCollateral.map((s) => (
-              <div key={s.displayName} className="stat-row mb-1">
-                <span className="stat-label">From {s.displayName}</span>
-                <span className="stat-value">${Number(formatEther(s.collateralValueUsd)).toFixed(2)} collateral</span>
+        <div className="space-y-5">
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="card p-4">
+              <div className="stat-label">Available to borrow</div>
+              <div className="mt-1 text-xl font-semibold tabular-nums">
+                {usd(accountData?.availableBorrowsUsd)}
               </div>
-            ))}
-            <div className="stat-row mt-1 border-t border-white/10 pt-1 font-medium">
-              <span className="text-slate-200">Combined available to borrow</span>
-              <span className="stat-value">
-                {accountData ? `$${Number(formatEther(accountData.availableBorrowsUsd)).toFixed(2)}` : "—"}
-              </span>
+            </div>
+            <div className="card p-4">
+              <div className="stat-label">Current debt</div>
+              <div className="mt-1 text-xl font-semibold tabular-nums text-rose-600">
+                {usd(accountData?.totalDebtUsd)}
+              </div>
+            </div>
+            <div className="card p-4">
+              <div className="stat-label">Health factor</div>
+              <div className="mt-1 text-xl">
+                <HealthFactor hf={accountData?.healthFactor} />
+              </div>
             </div>
           </div>
 
-          <div className="glass-panel mb-6 space-y-1 p-4 text-sm">
-            <div className="stat-row">
-              <span className="stat-label">Current debt (all assets)</span>
-              <span className="stat-value">
-                {accountData ? `$${Number(formatEther(accountData.totalDebtUsd)).toFixed(2)}` : "—"}
-              </span>
+          <div className="grid gap-5 lg:grid-cols-[1fr_minmax(0,320px)]">
+            <div className="grid gap-5 sm:grid-cols-2">
+              <ActionCard
+                title="Borrow"
+                symbol={borrowSymbol}
+                assetOptions={borrowableAssets}
+                onAsset={setBorrowSymbol}
+                amount={borrowAmount}
+                onAmount={setBorrowAmount}
+                buttonLabel={busy ? "Working…" : "Borrow"}
+                buttonClass="btn-primary"
+                onSubmit={handleBorrow}
+                disabled={busy || !borrowAmount}
+              />
+              <ActionCard
+                title="Repay"
+                symbol={repaySymbol}
+                assetOptions={borrowableAssets}
+                onAsset={setRepaySymbol}
+                amount={repayAmount}
+                onAmount={setRepayAmount}
+                buttonLabel={busy ? "Working…" : "Approve & Repay"}
+                buttonClass="btn-secondary"
+                onSubmit={handleRepay}
+                disabled={busy || !repayAmount}
+                footer={
+                  <span className="text-xs text-slate-500">
+                    Balance:{" "}
+                    {selectedBalance !== null && repayAsset
+                      ? Number(formatUnits(selectedBalance, repayAsset.decimals)).toFixed(4)
+                      : "—"}{" "}
+                    {repayAsset?.symbol}
+                  </span>
+                }
+              />
             </div>
-            <div className="stat-row">
-              <span className="stat-label">Health factor</span>
-              <span className="stat-value">
-                {accountData
-                  ? accountData.healthFactor >= MaxUint256 / 2n
-                    ? "MAX (no debt)"
-                    : Number(formatEther(accountData.healthFactor)).toFixed(2)
-                  : "—"}
-              </span>
-            </div>
-          </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label className="field-label">Borrow</label>
-              <select
-                value={borrowSymbol}
-                onChange={(e) => setBorrowSymbol(e.target.value)}
-                className="glass-select mb-2"
-              >
-                {borrowableAssets.map((a) => (
-                  <option key={a.symbol} value={a.symbol}>
-                    {a.displayName}
-                  </option>
+            <div className="card h-fit p-5">
+              <h2 className="section-title mb-3">Collateral by source</h2>
+              <div className="space-y-2 text-sm">
+                <div className="row">
+                  <span className="row-label">Gold leg</span>
+                  <span className="row-value">{usd(componentCapacity?.gold)}</span>
+                </div>
+                <div className="row">
+                  <span className="row-label">S&P 500 Index leg</span>
+                  <span className="row-value">{usd(componentCapacity?.stock)}</span>
+                </div>
+                {stockCollateral.map((s) => (
+                  <div key={s.displayName} className="row">
+                    <span className="row-label">{s.displayName}</span>
+                    <span className="row-value">{usd(s.collateralValueUsd)}</span>
+                  </div>
                 ))}
-              </select>
-              <input
-                type="number"
-                min="0"
-                value={borrowAmount}
-                onChange={(e) => setBorrowAmount(e.target.value)}
-                className="glass-input mb-2"
-              />
-              <button onClick={handleBorrow} disabled={busy || !borrowAmount} className="btn-primary w-full">
-                {busy ? "..." : "Borrow"}
-              </button>
-            </div>
-            <div>
-              <label className="field-label">Repay</label>
-              <select
-                value={repaySymbol}
-                onChange={(e) => setRepaySymbol(e.target.value)}
-                className="glass-select mb-2"
-              >
-                {borrowableAssets.map((a) => (
-                  <option key={a.symbol} value={a.symbol}>
-                    {a.displayName}
-                  </option>
-                ))}
-              </select>
-              <input
-                type="number"
-                min="0"
-                value={repayAmount}
-                onChange={(e) => setRepayAmount(e.target.value)}
-                className="glass-input mb-2"
-              />
-              <button onClick={handleRepay} disabled={busy || !repayAmount} className="btn-ghost w-full">
-                {busy ? "..." : "Approve + Repay"}
-              </button>
+              </div>
             </div>
           </div>
-          <p className="mt-2 text-xs text-slate-400">
-            Your {repayAsset?.symbol ?? "—"} balance:{" "}
-            {selectedBalance !== null && repayAsset ? formatUnits(selectedBalance, repayAsset.decimals) : "—"}
-          </p>
-          {status && <p className="mt-3 break-all text-xs text-slate-400">{status}</p>}
-        </>
+          <StatusLine status={status} />
+        </div>
       )}
     </div>
   );
 }
 
-function NotConfiguredNotice() {
+function ActionCard({
+  title,
+  symbol,
+  assetOptions,
+  onAsset,
+  amount,
+  onAmount,
+  buttonLabel,
+  buttonClass,
+  onSubmit,
+  disabled,
+  footer,
+}: {
+  title: string;
+  symbol: string;
+  assetOptions: { symbol: string; displayName: string }[];
+  onAsset: (s: string) => void;
+  amount: string;
+  onAmount: (s: string) => void;
+  buttonLabel: string;
+  buttonClass: string;
+  onSubmit: () => void;
+  disabled: boolean;
+  footer?: React.ReactNode;
+}) {
   return (
-    <div className="glass-panel mx-auto max-w-lg p-6 text-sm text-slate-400">
-      Contract addresses not configured — copy <code className="inline-code">deployments/hederaTestnet.json</code>{" "}
-      values into <code className="inline-code">frontend/.env</code> (see{" "}
-      <code className="inline-code">.env.example</code>).
+    <div className="card p-5">
+      <h2 className="section-title mb-3">{title}</h2>
+      <label className="field-label">Asset</label>
+      <div className="mb-3 flex items-center gap-3">
+        <TokenBadge symbol={symbol} size={28} />
+        <select value={symbol} onChange={(e) => onAsset(e.target.value)} className="select">
+          {assetOptions.map((a) => (
+            <option key={a.symbol} value={a.symbol}>
+              {a.displayName}
+            </option>
+          ))}
+        </select>
+      </div>
+      <label className="field-label">Amount</label>
+      <input
+        type="number"
+        min="0"
+        value={amount}
+        onChange={(e) => onAmount(e.target.value)}
+        className="input mb-4 text-lg"
+      />
+      <button onClick={onSubmit} disabled={disabled} className={`${buttonClass} w-full`}>
+        {buttonLabel}
+      </button>
+      {footer && <div className="mt-2">{footer}</div>}
     </div>
   );
 }

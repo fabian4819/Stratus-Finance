@@ -4,6 +4,7 @@ import { useWallet } from "../lib/WalletContext";
 import { addressesConfigured } from "../lib/addresses";
 import { getBasketToken, getGoldToken, getStockToken } from "../lib/contracts";
 import { readProvider } from "../lib/wallet";
+import { PageHeader, TokenBadge, ConnectPrompt, NotConfiguredNotice, StatusLine } from "../components/ui";
 
 /** PLAN.md §Phase 5, Screen 1: acquire/mint GOLD-x + STOCK-x into one
  * Stratus ETF basket token, via StratusBasketToken.mint(). */
@@ -60,14 +61,14 @@ export function MintBasket() {
       const basketAmount = parseEther(amount);
       const [amountA, amountB] = await basket.previewComponents(basketAmount);
 
-      setStatus("Approving Gold...");
+      setStatus("Approving Gold…");
       await (await gold.approve(basketAddress, amountA)).wait();
-      setStatus("Approving S&P 500 Index...");
+      setStatus("Approving S&P 500 Index…");
       await (await stock.approve(basketAddress, amountB)).wait();
-      setStatus("Minting basket tokens...");
+      setStatus("Minting basket tokens…");
       const tx = await basket.mint(basketAmount);
       await tx.wait();
-      setStatus(`Minted ${amount} sETF. Tx: ${tx.hash.slice(0, 10)}...`);
+      setStatus(`Minted ${amount} sETF. Tx ${tx.hash.slice(0, 10)}…`);
       await refreshBalances();
     } catch (e) {
       setStatus(e instanceof Error ? e.message : "Mint failed");
@@ -79,63 +80,72 @@ export function MintBasket() {
   if (!addressesConfigured()) return <NotConfiguredNotice />;
 
   return (
-    <div className="mx-auto max-w-lg">
-      <h1 className="mb-2 text-2xl font-semibold tracking-tight text-white">Mint Stratus ETF</h1>
-      <p className="mb-6 text-sm text-slate-400">
-        Mint Gold and S&amp;P 500 Index (50/50 by token count) into one Stratus ETF basket token.
-      </p>
+    <div>
+      <PageHeader
+        title="Mint Stratus ETF"
+        subtitle="Combine Gold and the S&P 500 Index (50/50 by token count) into one sETF basket token."
+      />
 
-      {!address ? (
-        <button onClick={connect} className="btn-primary">
-          Connect wallet to continue
-        </button>
-      ) : (
-        <>
-          <div className="glass-panel mb-4 space-y-1 p-4 text-sm">
-            <div className="stat-row">
-              <span className="stat-label">Gold balance</span>
-              <span className="stat-value">{balances ? formatEther(balances.gold) : "—"}</span>
-            </div>
-            <div className="stat-row">
-              <span className="stat-label">S&amp;P 500 Index balance</span>
-              <span className="stat-value">{balances ? formatEther(balances.stock) : "—"}</span>
-            </div>
-            <div className="stat-row mt-1 border-t border-white/10 pt-1 font-medium">
-              <span className="text-slate-200">Stratus ETF (sETF) balance</span>
-              <span className="stat-value">{balances ? formatEther(balances.basket) : "—"}</span>
-            </div>
-          </div>
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,420px)_1fr]">
+        <div className="card p-5">
+          {!address ? (
+            <ConnectPrompt onConnect={connect} label="Connect your wallet to mint." />
+          ) : (
+            <>
+              <div className="mb-4 space-y-2 rounded-xl bg-slate-50 p-3.5 text-sm">
+                <BalanceRow symbol="GOLD" name="Gold" value={balances ? formatEther(balances.gold) : "—"} />
+                <BalanceRow symbol="SPX" name="S&P 500 Index" value={balances ? formatEther(balances.stock) : "—"} />
+                <div className="row border-t border-[var(--border)] pt-2 font-semibold">
+                  <span>sETF balance</span>
+                  <span className="tabular-nums">{balances ? formatEther(balances.basket) : "—"}</span>
+                </div>
+              </div>
 
-          <label className="field-label">Amount to mint (sETF)</label>
-          <input
-            type="number"
-            min="0"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            className="glass-input mb-2"
-          />
-          {preview && (
-            <p className="mb-4 text-xs text-slate-400">
-              Requires {formatEther(preview.amountA)} Gold + {formatEther(preview.amountB)} S&amp;P 500 Index
-            </p>
+              <label className="field-label">Amount to mint (sETF)</label>
+              <input
+                type="number"
+                min="0"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className="input mb-2 text-lg"
+              />
+              {preview && (
+                <p className="mb-4 text-xs text-slate-500">
+                  Requires {Number(formatEther(preview.amountA)).toFixed(4)} Gold +{" "}
+                  {Number(formatEther(preview.amountB)).toFixed(4)} S&P 500 Index
+                </p>
+              )}
+
+              <button onClick={handleMint} disabled={busy || !amount} className="btn-primary mt-2 w-full">
+                {busy ? "Minting…" : "Approve & Mint"}
+              </button>
+              <StatusLine status={status} />
+            </>
           )}
+        </div>
 
-          <button onClick={handleMint} disabled={busy || !amount} className="btn-primary w-full">
-            {busy ? "Minting..." : "Approve + Mint"}
-          </button>
-          {status && <p className="mt-3 break-all text-xs text-slate-400">{status}</p>}
-        </>
-      )}
+        <div className="card h-fit p-5 text-sm text-slate-600">
+          <h2 className="section-title mb-3">Why a basket</h2>
+          <p className="mb-3">
+            The sETF is one ERC-20 backed by a fixed ratio of GOLD-x and STOCK-x. Deposit it and the vault{" "}
+            <span className="font-medium text-slate-900">decomposes</span> it into two isolated pool reserves, each
+            with its own risk parameters — a crash in one leg can't liquidate the other.
+          </p>
+          <p>Redeeming recomposes the two legs back into the basket token.</p>
+        </div>
+      </div>
     </div>
   );
 }
 
-function NotConfiguredNotice() {
+function BalanceRow({ symbol, name, value }: { symbol: string; name: string; value: string }) {
   return (
-    <div className="glass-panel mx-auto max-w-lg p-6 text-sm text-slate-400">
-      Contract addresses not configured — copy <code className="inline-code">deployments/hederaTestnet.json</code>{" "}
-      values into <code className="inline-code">frontend/.env</code> (see{" "}
-      <code className="inline-code">.env.example</code>).
+    <div className="flex items-center justify-between">
+      <span className="flex items-center gap-2 text-slate-600">
+        <TokenBadge symbol={symbol} size={22} />
+        {name}
+      </span>
+      <span className="tabular-nums font-medium text-slate-900">{value}</span>
     </div>
   );
 }
