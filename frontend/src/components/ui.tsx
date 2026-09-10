@@ -1,5 +1,6 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { formatEther, MaxUint256 } from "ethers";
+import { assetLogo } from "../lib/assetLogos";
 
 /** Shared presentational bits used across the pages — no chain logic, no state. */
 
@@ -20,9 +21,28 @@ function paletteFor(seed: string): string {
   return BADGE_PALETTE[h % BADGE_PALETTE.length];
 }
 
-/** Deterministic colored initials chip — stands in for a token logo. */
+/** Real asset logo, with a deterministic colored initials chip as the
+ * fallback (unmapped asset, or the logo URL fails to load). */
 export function TokenBadge({ symbol, size = 32 }: { symbol: string; size?: number }) {
+  const [failed, setFailed] = useState(false);
+  const logo = assetLogo(symbol);
   const initials = symbol.replace(/-x$/i, "").slice(0, 4);
+
+  if (logo && !failed) {
+    return (
+      <img
+        src={logo.url}
+        alt={initials}
+        loading="lazy"
+        onError={() => setFailed(true)}
+        className={`shrink-0 rounded-full object-contain ${
+          logo.fitted ? "border border-slate-200 bg-white p-[3px]" : ""
+        }`}
+        style={{ width: size, height: size }}
+      />
+    );
+  }
+
   return (
     <span
       className={`inline-flex shrink-0 items-center justify-center rounded-full font-semibold ${paletteFor(symbol)}`}
