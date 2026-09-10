@@ -121,8 +121,8 @@ All addresses on **Hedera testnet** (chain id 296) — full record with every tr
 | MockUSDC (debt asset) | [`0xDc2088fd97eda106943cABf443cA5c6702c37154`](https://hashscan.io/testnet/contract/0xDc2088fd97eda106943cABf443cA5c6702c37154) |
 | StratusBasketToken | [`0x2255Eb7Bc29A27E2b9113D6BA28807812Bd4DEaD`](https://hashscan.io/testnet/contract/0x2255Eb7Bc29A27E2b9113D6BA28807812Bd4DEaD) |
 | StratusVault | [`0x7F16Cd599BF2aDBBacD856263ef36eABFfeC06B2`](https://hashscan.io/testnet/contract/0x7F16Cd599BF2aDBBacD856263ef36eABFfeC06B2) |
-| StratusRiskView | [`0xBFe160409B8f0Ebb9DC7Bb67f5E3373e1457eE5d`](https://hashscan.io/testnet/contract/0xBFe160409B8f0Ebb9DC7Bb67f5E3373e1457eE5d) |
-| StratusRedstoneOracle (live — real gold + S&P 500) | [`0xeB188cF2F86E2236001Ca1BEB8E8b3f2184D662D`](https://hashscan.io/testnet/contract/0xeB188cF2F86E2236001Ca1BEB8E8b3f2184D662D) |
+| StratusRiskView | [`0x499a48fAAC43c79E2bd0c99D8b9cB601eF0755D2`](https://hashscan.io/testnet/contract/0x499a48fAAC43c79E2bd0c99D8b9cB601eF0755D2) |
+| StratusRedstoneOracle (live — real gold + S&P 500, 6h maxPriceAge) | [`0x7aa45f5Ff7e99f13C60F6f3913aaff68E51DfdD9`](https://hashscan.io/testnet/contract/0x7aa45f5Ff7e99f13C60F6f3913aaff68E51DfdD9) |
 | StratusChainlinkPriceOracle (alternate, live) | [`0x784B85521B77F43655960718539E85fBa012e659`](https://hashscan.io/testnet/contract/0x784B85521B77F43655960718539E85fBa012e659) |
 | StratusPriceOracle (Pyth, as designed) | [`0xB590789A6cC576ED8C14A3E846c16b9f9a4Cc681`](https://hashscan.io/testnet/contract/0xB590789A6cC576ED8C14A3E846c16b9f9a4Cc681) |
 | LendingPool (Bonzo/Aave v2 fork) | [`0x36f251a19372c550cc3784E108391eeC004B903E`](https://hashscan.io/testnet/contract/0x36f251a19372c550cc3784E108391eeC004B903E) |

@@ -155,6 +155,29 @@ in the codebase, same as before — real, working (Chainlink) or real,
 documented-but-blocked (Pyth) implementations of the same interface,
 switchable via a single `setPriceOracle` call.
 
+## Follow-up: `maxPriceAge` raised 1h → 6h
+
+The cache refresh (`script/update-redstone-prices.ts`) has to run often
+enough that the pool's cached price never exceeds the oracle's immutable
+`maxPriceAge`, or every deposit/borrow/liquidation reverts `StalePrice()`.
+At 1 hour that meant an hourly cron, and the repeated ~33-transaction
+refreshes drained the deployer wallet's HBAR. Raising `maxPriceAge` to 6
+hours cuts the required refresh cadence by 6× for a bounded cost: the
+pool's enforced math may use a price up to 6 hours old (acceptable for a
+testnet demo — gold and the S&P 500 don't move enough intraday to push a
+healthy position under water, and the demo stress path uses
+`setDemoOffsetBps`, not real drift). Display prices are unaffected —
+`StratusLivePriceReader` is always real-time, separate code path.
+
+`maxPriceAge` is set once in the constructor and never mutated, so this
+was a fresh deploy (`script/13-deploy-oracle-6h.ts`,
+`0x7aa45f5Ff7e99f13C60F6f3913aaff68E51DfdD9`) + re-wiring all 33 feed
+ids + `setPriceOracle` on the pool's `AddressesProvider` + redeploying
+`StratusRiskView` (`0x499a48fA…0755D2`) and `StratusMarketplace`
+(`0x74474628…47dF4`), both of which hold an immutable oracle reference.
+Verified after: `getUserRisk()` and a marketplace `quote()` both succeed
+on-chain against the new contracts.
+
 ## Follow-up: genuinely real-time price display (`StratusLivePriceReader`)
 
 The cache above is unavoidable for anything the pool enforces

@@ -1,6 +1,6 @@
 {
   "network": "hederaTestnet",
-  "updatedAt": "2026-09-09T17:16:41.918Z",
+  "updatedAt": "2026-09-10T02:49:19.648Z",
   "contracts": {
     "GoldToken": "0xcF19378058EC9DFD25975527BDf7F68faeC2C7fc",
     "StockIndexToken": "0x59E3908069993cDDbD3C83479c1aFc92242c0d3A",
@@ -28,9 +28,9 @@
     "aToken_STOCK-x": "0x0C19b77B8bb49b86abbEC0f64bB5733C4CE2A03d",
     "aToken_USDC": "0xDfc07b53E8D6aA1194E2E2Ef2d352B6bA049B1a1",
     "StratusVault": "0x7F16Cd599BF2aDBBacD856263ef36eABFfeC06B2",
-    "StratusRiskView": "0xBFe160409B8f0Ebb9DC7Bb67f5E3373e1457eE5d",
+    "StratusRiskView": "0x499a48fAAC43c79E2bd0c99D8b9cB601eF0755D2",
     "StratusChainlinkPriceOracle": "0x784B85521B77F43655960718539E85fBa012e659",
-    "StratusRedstoneOracle": "0xeB188cF2F86E2236001Ca1BEB8E8b3f2184D662D",
+    "StratusRedstoneOracle": "0x7aa45f5Ff7e99f13C60F6f3913aaff68E51DfdD9",
     "AaplToken": "0xF2AA6A2e4D4b21b0B0a8975AC6fa2A8Ee7Bb87b1",
     "TslaToken": "0xFc3712b564e44a3fb0E1c12aE26bC32763804a65",
     "MsftToken": "0x1fa772919aa089d9A48f16367cdb03d28aBE03AE",
@@ -65,7 +65,7 @@
     "aToken_AMD-x": "0x586e6568ac04c245854bb06F39CaF20c3C1A0B9E",
     "aToken_PLTR-x": "0x4351a36D6a5D54bf7210B5720d00C43c21887534",
     "StratusLivePriceReader": "0x4bD75A26965a94f3b0E3845d31Ed5cc2dc50A5eE",
-    "StratusMarketplace": "0x9e390F14859643a2bC57a8C051b848F8B0eC51B3",
+    "StratusMarketplace": "0x744746288fB600E570a6E5D142d7B0D2db147dF4",
     "BtcToken": "0x5930497f3f4fDd39c72DE25866509FCFe7cb320B",
     "EthToken": "0x6e9b7dE34108a43eBC3f68Ebb40aCeBC821C599b",
     "UsdtToken": "0xE65243bD81A44aC8dC9f4CDA8d092aFFf11Be559",
@@ -156,7 +156,7 @@
       "setPriceOracleTx": "0xe5342a3713ff9e4f2397e4fb8e4ec7524110c0b110c3ab52f27d9a2dcad9467b"
     },
     "gate4LiquidationPrimary": {
-      "description": "PLAN.md Phase 4 Gate 4, primary scenario: deposited value-balanced GOLD-x (~$718) and STOCK-x (~$742) directly into the pool, borrowed 90% of combined capacity, stressed GOLD-x -90% via StratusChainlinkPriceOracle.setDemoOffsetBps (DEMO-ONLY, see PLAN.md §6.3), health factor dropped to 0.65, liquidator (a distinct funded/whitelisted account, not the borrower) called liquidationCall(GOLD-x, USDC, ...) - seized all available GOLD-x collateral (it was worth less than the covered debt even with the liquidation bonus). STOCK-x aToken balance confirmed byte-for-byte unchanged (0.3 before and after).",
+      "description": "PLAN.md Phase 4 Gate 4, primary scenario: deposited value-balanced GOLD-x (~$718) and STOCK-x (~$742) directly into the pool, borrowed 90% of combined capacity, stressed GOLD-x -90% via StratusChainlinkPriceOracle.setDemoOffsetBps (DEMO-ONLY, see PLAN.md \u00a76.3), health factor dropped to 0.65, liquidator (a distinct funded/whitelisted account, not the borrower) called liquidationCall(GOLD-x, USDC, ...) - seized all available GOLD-x collateral (it was worth less than the covered debt even with the liquidation bonus). STOCK-x aToken balance confirmed byte-for-byte unchanged (0.3 before and after).",
       "liquidatorAddress": "0x92Eee0A486a366EEB21c229A5A9672932753E9E1",
       "depositGoldTx": "0x412e19ef77e9697aa5e31b6b6c99e9cb45b5c22e15afeb7b93b13911ac2016f0",
       "depositStockTx": "0x373cd26ca2574a08441765ddec9c6d414a6e9f6961575bf864aefe87f86fe727",
@@ -220,6 +220,17 @@
       "verifyBorrowTx": "0x5e3291364b4ad34a98a70254363e0f45fcba16b1e307722f486aa076ecf17a58",
       "verifyRepayTx": "0xc1e73e1c483f4feed5738f738129efb722e48b2b0d19b1095b994a94ff747c60",
       "gasLimitNote": "batchInitReserve's auto-estimated gas underestimated the true cost once 14 reserves already existed - fixed with an explicit gasLimit override (9M) on the batchInitReserve call itself rather than shrinking chunk size further; confirmed via the Hedera mirror node's contracts/results endpoint (gas_used running right up against the auto-estimated gas_limit), since HashIO's own error responses returned no decodable revert reason."
+    },
+    "oracleMaxAge6h": {
+      "description": "Raised StratusRedstoneOracle.maxPriceAge from 1h to 6h so script/update-redstone-prices.ts (the cache refresh) can run far less often without the pool's cached price going stale - after repeated hourly cron refreshes drained the deployer's HBAR. maxPriceAge is immutable, so this meant a fresh oracle deploy (contracts/script/13-deploy-oracle-6h.ts) + re-wiring all 33 feed ids + repointing the pool's AddressesProvider + redeploying the two contracts holding an immutable oracle ref (StratusRiskView, StratusMarketplace). Display prices via StratusLivePriceReader are unaffected either way - always real-time, separate code path. Verified: getUserRisk() and marketplace quote() both succeed on the new contracts.",
+      "maxPriceAgeSeconds": 21600,
+      "oldOracle": "0xeB188cF2F86E2236001Ca1BEB8E8b3f2184D662D",
+      "newOracle": "0x7aa45f5Ff7e99f13C60F6f3913aaff68E51DfdD9",
+      "oldRiskView": "0xBFe160409B8f0Ebb9DC7Bb67f5E3373e1457eE5d",
+      "newRiskView": "0x499a48fAAC43c79E2bd0c99D8b9cB601eF0755D2",
+      "oldMarketplace": "0x9e390F14859643a2bC57a8C051b848F8B0eC51B3",
+      "newMarketplace": "0x744746288fB600E570a6E5D142d7B0D2db147dF4",
+      "repointPoolTx": "0xfae1d35c2ca83569f26f46cda814f06ffbd0061abf93f9a893cfaab1985ec2d3"
     }
   }
 }
