@@ -1,3 +1,64 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  body {
+    @apply min-h-screen bg-slate-950 text-slate-200 antialiased;
+    /* Atmospheric "stratus layer" — colored light blooms behind the glass. */
+    background-image:
+      radial-gradient(55rem 55rem at 12% -12%, rgba(56, 189, 248, 0.18), transparent 60%),
+      radial-gradient(50rem 50rem at 100% -5%, rgba(129, 140, 248, 0.16), transparent 55%),
+      radial-gradient(45rem 45rem at 50% 118%, rgba(45, 212, 191, 0.12), transparent 60%);
+    background-attachment: fixed;
+  }
+}
+
+@layer components {
+  .glass-panel {
+    @apply rounded-2xl border border-white/10 bg-white/[0.06] backdrop-blur-xl
+           shadow-[0_8px_32px_rgba(2,6,23,0.35)];
+  }
+
+  .glass-input {
+    @apply w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-white
+           outline-none transition-colors placeholder:text-slate-500
+           focus:border-sky-400/60 focus:bg-white/[0.08];
+  }
+
+  /* Native <select> menus render on an opaque surface — keep the options readable there. */
+  .glass-select {
+    @apply glass-input;
+  }
+  .glass-select > option {
+    @apply bg-slate-900 text-white;
+  }
+
+  .field-label {
+    @apply mb-1 block text-sm font-medium text-slate-300;
+  }
+
+  .btn-primary {
+    @apply rounded-xl bg-sky-500 px-4 py-2 text-sm font-semibold text-slate-950 transition-colors
+           hover:bg-sky-400 disabled:opacity-40 disabled:hover:bg-sky-500;
+  }
+
+  .btn-ghost {
+    @apply rounded-xl border border-white/15 bg-white/[0.03] px-4 py-2 text-sm font-semibold text-slate-100
+           transition-colors hover:bg-white/[0.08] disabled:opacity-40;
+  }
+
+  .stat-row {
+    @apply flex justify-between text-sm;
+  }
+  .stat-label {
+    @apply text-slate-400;
+  }
+  .stat-value {
+    @apply tabular-nums text-white;
+  }
+
+  .inline-code {
+    @apply rounded bg-white/10 px-1 py-0.5 text-slate-200;
+  }
+}

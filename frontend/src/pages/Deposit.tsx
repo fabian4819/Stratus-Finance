@@ -85,20 +85,20 @@ export function Deposit() {
   const labels = ["Gold reserve", "S&P 500 Index reserve"];
 
   return (
-    <div className="max-w-3xl mx-auto p-6">
-      <h1 className="text-xl font-semibold mb-4">Deposit &amp; Decompose</h1>
-      <p className="text-sm text-slate-600 mb-6">
+    <div className="mx-auto max-w-3xl">
+      <h1 className="mb-2 text-2xl font-semibold tracking-tight text-white">Deposit &amp; Decompose</h1>
+      <p className="mb-6 text-sm text-slate-400">
         Depositing your basket token splits it into two isolated reserve positions — each with independent risk
         parameters. A price move in one leg never forces liquidation of the other.
       </p>
 
       {!address ? (
-        <button onClick={connect} className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white">
+        <button onClick={connect} className="btn-primary">
           Connect wallet to continue
         </button>
       ) : (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+          <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
             {labels.map((label, i) => {
               const c = risk?.components[i];
               const cfg = configs?.[i];
@@ -116,33 +116,29 @@ export function Deposit() {
           </div>
 
           {risk && (
-            <div className="rounded-lg border border-slate-200 p-4 mb-6 text-sm flex justify-between">
-              <span className="text-slate-500">Combined health factor (real, enforced by the pool)</span>
-              <span className="font-medium">{formatHealthFactor(risk.combinedHealthFactor)}</span>
+            <div className="glass-panel mb-6 flex justify-between p-4 text-sm">
+              <span className="stat-label">Combined health factor (real, enforced by the pool)</span>
+              <span className="stat-value font-medium">{formatHealthFactor(risk.combinedHealthFactor)}</span>
             </div>
           )}
 
-          <div className="rounded-lg border border-slate-200 p-4 mb-4 text-sm flex justify-between">
-            <span className="text-slate-500">Your sETF balance</span>
-            <span>{basketBalance !== null ? formatEther(basketBalance) : "—"}</span>
+          <div className="glass-panel mb-4 flex justify-between p-4 text-sm">
+            <span className="stat-label">Your sETF balance</span>
+            <span className="stat-value">{basketBalance !== null ? formatEther(basketBalance) : "—"}</span>
           </div>
 
-          <label className="block text-sm font-medium mb-1">Amount to deposit (sETF)</label>
+          <label className="field-label">Amount to deposit (sETF)</label>
           <input
             type="number"
             min="0"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm mb-4"
+            className="glass-input mb-4"
           />
-          <button
-            onClick={handleDeposit}
-            disabled={busy || !amount}
-            className="w-full rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-          >
+          <button onClick={handleDeposit} disabled={busy || !amount} className="btn-primary w-full">
             {busy ? "Depositing..." : "Approve + Deposit"}
           </button>
-          {status && <p className="mt-3 text-xs text-slate-600 break-all">{status}</p>}
+          {status && <p className="mt-3 break-all text-xs text-slate-400">{status}</p>}
         </>
       )}
     </div>
@@ -168,36 +164,45 @@ function ReserveCard({
   healthFactor?: bigint;
 }) {
   return (
-    <div className="rounded-lg border border-slate-200 p-4">
-      <div className="text-sm font-medium mb-2">{label}</div>
-      <dl className="text-xs text-slate-500 space-y-1">
+    <div className="glass-panel p-4">
+      <div className="mb-2 text-sm font-medium text-white">{label}</div>
+      <dl className="space-y-1 text-xs text-slate-400">
         <div className="flex justify-between">
           <dt>LTV</dt>
-          <dd>{ltvBps !== undefined ? `${Number(ltvBps) / 100}%` : "—"}</dd>
+          <dd className="tabular-nums text-slate-200">{ltvBps !== undefined ? `${Number(ltvBps) / 100}%` : "—"}</dd>
         </div>
         <div className="flex justify-between">
           <dt>Liquidation threshold</dt>
-          <dd>{thresholdBps !== undefined ? `${Number(thresholdBps) / 100}%` : "—"}</dd>
+          <dd className="tabular-nums text-slate-200">
+            {thresholdBps !== undefined ? `${Number(thresholdBps) / 100}%` : "—"}
+          </dd>
         </div>
         <div className="flex justify-between">
           <dt>Collateral value</dt>
-          <dd>{collateralValueUsd !== undefined ? `$${Number(formatEther(collateralValueUsd)).toFixed(2)}` : "—"}</dd>
+          <dd className="tabular-nums text-slate-200">
+            {collateralValueUsd !== undefined ? `$${Number(formatEther(collateralValueUsd)).toFixed(2)}` : "—"}
+          </dd>
         </div>
         <div className="flex justify-between">
           <dt>Component health factor*</dt>
-          <dd>{healthFactor !== undefined ? formatHealthFactor(healthFactor) : "—"}</dd>
+          <dd className="tabular-nums text-slate-200">
+            {healthFactor !== undefined ? formatHealthFactor(healthFactor) : "—"}
+          </dd>
         </div>
       </dl>
-      <p className="text-[10px] text-slate-400 mt-2">*Heuristic — see combined health factor for the real, enforced number.</p>
+      <p className="mt-2 text-[10px] text-slate-500">
+        *Heuristic — see combined health factor for the real, enforced number.
+      </p>
     </div>
   );
 }
 
 function NotConfiguredNotice() {
   return (
-    <div className="max-w-lg mx-auto p-6 text-sm text-slate-500">
-      Contract addresses not configured — copy <code>deployments/hederaTestnet.json</code> values into{" "}
-      <code>frontend/.env</code> (see <code>.env.example</code>).
+    <div className="glass-panel mx-auto max-w-lg p-6 text-sm text-slate-400">
+      Contract addresses not configured — copy <code className="inline-code">deployments/hederaTestnet.json</code>{" "}
+      values into <code className="inline-code">frontend/.env</code> (see{" "}
+      <code className="inline-code">.env.example</code>).
     </div>
   );
 }

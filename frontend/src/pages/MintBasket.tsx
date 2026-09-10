@@ -79,55 +79,51 @@ export function MintBasket() {
   if (!addressesConfigured()) return <NotConfiguredNotice />;
 
   return (
-    <div className="max-w-lg mx-auto p-6">
-      <h1 className="text-xl font-semibold mb-4">Mint Stratus ETF</h1>
-      <p className="text-sm text-slate-600 mb-6">
+    <div className="mx-auto max-w-lg">
+      <h1 className="mb-2 text-2xl font-semibold tracking-tight text-white">Mint Stratus ETF</h1>
+      <p className="mb-6 text-sm text-slate-400">
         Mint Gold and S&amp;P 500 Index (50/50 by token count) into one Stratus ETF basket token.
       </p>
 
       {!address ? (
-        <button onClick={connect} className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white">
+        <button onClick={connect} className="btn-primary">
           Connect wallet to continue
         </button>
       ) : (
         <>
-          <div className="rounded-lg border border-slate-200 p-4 mb-4 text-sm space-y-1">
-            <div className="flex justify-between">
-              <span className="text-slate-500">Gold balance</span>
-              <span>{balances ? formatEther(balances.gold) : "—"}</span>
+          <div className="glass-panel mb-4 space-y-1 p-4 text-sm">
+            <div className="stat-row">
+              <span className="stat-label">Gold balance</span>
+              <span className="stat-value">{balances ? formatEther(balances.gold) : "—"}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-slate-500">S&amp;P 500 Index balance</span>
-              <span>{balances ? formatEther(balances.stock) : "—"}</span>
+            <div className="stat-row">
+              <span className="stat-label">S&amp;P 500 Index balance</span>
+              <span className="stat-value">{balances ? formatEther(balances.stock) : "—"}</span>
             </div>
-            <div className="flex justify-between font-medium border-t border-slate-200 pt-1 mt-1">
-              <span>Stratus ETF (sETF) balance</span>
-              <span>{balances ? formatEther(balances.basket) : "—"}</span>
+            <div className="stat-row mt-1 border-t border-white/10 pt-1 font-medium">
+              <span className="text-slate-200">Stratus ETF (sETF) balance</span>
+              <span className="stat-value">{balances ? formatEther(balances.basket) : "—"}</span>
             </div>
           </div>
 
-          <label className="block text-sm font-medium mb-1">Amount to mint (sETF)</label>
+          <label className="field-label">Amount to mint (sETF)</label>
           <input
             type="number"
             min="0"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm mb-2"
+            className="glass-input mb-2"
           />
           {preview && (
-            <p className="text-xs text-slate-500 mb-4">
+            <p className="mb-4 text-xs text-slate-400">
               Requires {formatEther(preview.amountA)} Gold + {formatEther(preview.amountB)} S&amp;P 500 Index
             </p>
           )}
 
-          <button
-            onClick={handleMint}
-            disabled={busy || !amount}
-            className="w-full rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-          >
+          <button onClick={handleMint} disabled={busy || !amount} className="btn-primary w-full">
             {busy ? "Minting..." : "Approve + Mint"}
           </button>
-          {status && <p className="mt-3 text-xs text-slate-600 break-all">{status}</p>}
+          {status && <p className="mt-3 break-all text-xs text-slate-400">{status}</p>}
         </>
       )}
     </div>
@@ -136,9 +132,10 @@ export function MintBasket() {
 
 function NotConfiguredNotice() {
   return (
-    <div className="max-w-lg mx-auto p-6 text-sm text-slate-500">
-      Contract addresses not configured — copy <code>deployments/hederaTestnet.json</code> values into{" "}
-      <code>frontend/.env</code> (see <code>.env.example</code>).
+    <div className="glass-panel mx-auto max-w-lg p-6 text-sm text-slate-400">
+      Contract addresses not configured — copy <code className="inline-code">deployments/hederaTestnet.json</code>{" "}
+      values into <code className="inline-code">frontend/.env</code> (see{" "}
+      <code className="inline-code">.env.example</code>).
     </div>
   );
 }

@@ -84,55 +84,53 @@ export function RiskPanel() {
   if (!addressesConfigured()) return <NotConfiguredNotice />;
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="mx-auto max-w-3xl">
       <DemoStressBanner stressedAssets={stressedAssets} />
 
-      <div className="p-6">
-        <h1 className="text-xl font-semibold mb-4">Risk Panel</h1>
+      <h1 className="mb-4 text-2xl font-semibold tracking-tight text-white">Risk Panel</h1>
 
-        {!address && (
-          <button onClick={connect} className="mb-6 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white">
-            Connect wallet for your position
-          </button>
-        )}
+      {!address && (
+        <button onClick={connect} className="btn-primary mb-6">
+          Connect wallet for your position
+        </button>
+      )}
 
-        <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-emerald-600">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-          Live market prices
+      <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-emerald-400">
+        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+        Live market prices
+      </div>
+      <div className="glass-panel mb-4 space-y-1 p-4 text-sm">
+        <div className="stat-row">
+          <span className="stat-label">Gold price (XAU/USD)</span>
+          <span className="stat-value">{prices ? `$${Number(formatEther(prices.gold)).toFixed(2)}` : "—"}</span>
         </div>
-        <div className="rounded-lg border border-slate-200 p-4 mb-4 text-sm space-y-1">
-          <div className="flex justify-between">
-            <span className="text-slate-500">Gold price (XAU/USD)</span>
-            <span>{prices ? `$${Number(formatEther(prices.gold)).toFixed(2)}` : "—"}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-slate-500">S&amp;P 500 Index price</span>
-            <span>{prices ? `$${Number(formatEther(prices.stock)).toFixed(2)}` : "—"}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-slate-500">USDC price</span>
-            <span>{prices ? `$${Number(formatEther(prices.usdc)).toFixed(4)}` : "—"}</span>
-          </div>
+        <div className="stat-row">
+          <span className="stat-label">S&amp;P 500 Index price</span>
+          <span className="stat-value">{prices ? `$${Number(formatEther(prices.stock)).toFixed(2)}` : "—"}</span>
         </div>
+        <div className="stat-row">
+          <span className="stat-label">USDC price</span>
+          <span className="stat-value">{prices ? `$${Number(formatEther(prices.usdc)).toFixed(4)}` : "—"}</span>
+        </div>
+      </div>
 
-        <div className="mb-1 text-xs text-slate-400">
-          Uses the protocol's cached price (refreshed periodically) — what deposit/borrow/liquidation actually enforce
-        </div>
-        <div className="rounded-lg border border-slate-200 p-4 mb-6 text-sm flex justify-between">
-          <span className="text-slate-500">Combined health factor (real, enforced)</span>
-          <span className="font-medium">
-            {risk
-              ? risk.combinedHealthFactor >= MaxUint256 / 2n
-                ? "MAX (no debt)"
-                : Number(formatEther(risk.combinedHealthFactor)).toFixed(2)
-              : "—"}
-          </span>
-        </div>
+      <div className="mb-1 text-xs text-slate-500">
+        Uses the protocol's cached price (refreshed periodically) — what deposit/borrow/liquidation actually enforce
+      </div>
+      <div className="glass-panel mb-6 flex justify-between p-4 text-sm">
+        <span className="stat-label">Combined health factor (real, enforced)</span>
+        <span className="stat-value font-medium">
+          {risk
+            ? risk.combinedHealthFactor >= MaxUint256 / 2n
+              ? "MAX (no debt)"
+              : Number(formatEther(risk.combinedHealthFactor)).toFixed(2)
+            : "—"}
+        </span>
+      </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <HealthBar label="Gold leg" component={risk?.components[0]} />
-          <HealthBar label="S&P 500 Index leg" component={risk?.components[1]} />
-        </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <HealthBar label="Gold leg" component={risk?.components[0]} />
+        <HealthBar label="S&P 500 Index leg" component={risk?.components[1]} />
       </div>
     </div>
   );
@@ -146,16 +144,18 @@ function HealthBar({ label, component }: { label: string; component?: ComponentR
   const barColor = isMax || (hf !== undefined && Number(formatEther(hf)) >= 1.2) ? "bg-emerald-400" : "bg-amber-500";
 
   return (
-    <div className="rounded-lg border border-slate-200 p-4">
-      <div className="text-sm font-medium mb-2">{label}</div>
-      <div className="h-2 w-full rounded-full bg-slate-100">
+    <div className="glass-panel p-4">
+      <div className="mb-2 text-sm font-medium text-white">{label}</div>
+      <div className="h-2 w-full rounded-full bg-white/10">
         <div className={`h-2 rounded-full ${barColor}`} style={{ width: `${pct}%` }} />
       </div>
-      <div className="text-xs text-slate-400 mt-1">
+      <div className="mt-1 text-xs text-slate-400">
         Component health factor: {hf === undefined ? "—" : isMax ? "MAX" : Number(formatEther(hf)).toFixed(2)}
       </div>
       {component && (
-        <div className="text-xs text-slate-400">Collateral value: ${Number(formatEther(component.collateralValueUsd)).toFixed(2)}</div>
+        <div className="text-xs text-slate-400">
+          Collateral value: ${Number(formatEther(component.collateralValueUsd)).toFixed(2)}
+        </div>
       )}
     </div>
   );
@@ -163,9 +163,10 @@ function HealthBar({ label, component }: { label: string; component?: ComponentR
 
 function NotConfiguredNotice() {
   return (
-    <div className="max-w-lg mx-auto p-6 text-sm text-slate-500">
-      Contract addresses not configured — copy <code>deployments/hederaTestnet.json</code> values into{" "}
-      <code>frontend/.env</code> (see <code>.env.example</code>).
+    <div className="glass-panel mx-auto max-w-lg p-6 text-sm text-slate-400">
+      Contract addresses not configured — copy <code className="inline-code">deployments/hederaTestnet.json</code>{" "}
+      values into <code className="inline-code">frontend/.env</code> (see{" "}
+      <code className="inline-code">.env.example</code>).
     </div>
   );
 }

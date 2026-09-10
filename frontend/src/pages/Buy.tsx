@@ -80,31 +80,31 @@ export function Buy() {
   }
 
   return (
-    <div className="max-w-lg mx-auto p-6">
-      <h1 className="text-xl font-semibold mb-4">Buy</h1>
-      <p className="text-sm text-slate-600 mb-6">
+    <div className="mx-auto max-w-lg">
+      <h1 className="mb-2 text-2xl font-semibold tracking-tight text-white">Buy</h1>
+      <p className="mb-6 text-sm text-slate-400">
         Buy Gold, the S&amp;P 500 Index, or any of 10 individual stocks directly with USDC, at the live protocol
         price. First-time buyers are whitelisted automatically — no waiting on anyone.
       </p>
 
       {!address ? (
-        <button onClick={connect} className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white">
+        <button onClick={connect} className="btn-primary">
           Connect wallet to continue
         </button>
       ) : (
         <>
-          <div className="rounded-lg border border-slate-200 p-4 mb-4 text-sm flex justify-between">
-            <span className="text-slate-500">Your USDC balance</span>
-            <span>{usdcBalance !== null ? formatUnits(usdcBalance, USDC_DECIMALS) : "—"}</span>
+          <div className="glass-panel mb-4 flex justify-between p-4 text-sm">
+            <span className="stat-label">Your USDC balance</span>
+            <span className="stat-value">{usdcBalance !== null ? formatUnits(usdcBalance, USDC_DECIMALS) : "—"}</span>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 mb-2">
+          <div className="mb-2 grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium mb-1">Asset</label>
+              <label className="field-label">Asset</label>
               <select
                 value={selectedSymbol}
                 onChange={(e) => setSelectedSymbol(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className="glass-select"
               >
                 {sellableAssets.map((a) => (
                   <option key={a.symbol} value={a.symbol}>
@@ -114,29 +114,25 @@ export function Buy() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Amount (shares, not USD)</label>
+              <label className="field-label">Amount (shares, not USD)</label>
               <input
                 type="number"
                 min="0"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className="glass-input"
               />
             </div>
           </div>
 
-          <p className="text-xs text-slate-500 mb-4">
+          <p className="mb-4 text-xs text-slate-400">
             Cost: {quote !== null ? `${Number(formatUnits(quote, USDC_DECIMALS)).toFixed(2)} USDC` : "—"}
           </p>
 
-          <button
-            onClick={handleBuy}
-            disabled={busy || !amount || quote === null}
-            className="w-full rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-          >
+          <button onClick={handleBuy} disabled={busy || !amount || quote === null} className="btn-primary w-full">
             {busy ? "Working..." : "Approve + Buy"}
           </button>
-          {status && <p className="mt-3 text-xs text-slate-600 break-all">{status}</p>}
+          {status && <p className="mt-3 break-all text-xs text-slate-400">{status}</p>}
         </>
       )}
     </div>
@@ -145,9 +141,10 @@ export function Buy() {
 
 function NotConfiguredNotice() {
   return (
-    <div className="max-w-lg mx-auto p-6 text-sm text-slate-500">
-      Contract addresses not configured — copy <code>deployments/hederaTestnet.json</code> values into{" "}
-      <code>frontend/.env</code> (see <code>.env.example</code>).
+    <div className="glass-panel mx-auto max-w-lg p-6 text-sm text-slate-400">
+      Contract addresses not configured — copy <code className="inline-code">deployments/hederaTestnet.json</code>{" "}
+      values into <code className="inline-code">frontend/.env</code> (see{" "}
+      <code className="inline-code">.env.example</code>).
     </div>
   );
 }

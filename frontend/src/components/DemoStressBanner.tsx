@@ -9,7 +9,7 @@ export function DemoStressBanner({ stressedAssets }: { stressedAssets: string[] 
   if (stressedAssets.length === 0) return null;
 
   return (
-    <div className="w-full bg-amber-500 text-amber-950 px-4 py-2 text-sm font-semibold text-center">
+    <div className="mb-6 rounded-2xl border border-amber-400/40 bg-amber-500/15 px-4 py-2.5 text-center text-sm font-semibold text-amber-200 backdrop-blur-xl">
       ⚠ DEMO PRICE STRESS ACTIVE — {stressedAssets.join(", ")} price is being manually offset for demonstration
       purposes and does not reflect the live oracle feed.
     </div>

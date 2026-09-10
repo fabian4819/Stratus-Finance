@@ -17,31 +17,48 @@ const NAV_ITEMS = [
   { to: "/stocks", label: "Individual Stocks" },
 ];
 
+function CloudMark() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5 text-sky-400" fill="currentColor" aria-hidden="true">
+      <path d="M7 18a4 4 0 0 1-.5-7.97A5.5 5.5 0 0 1 17 9.5a3.5 3.5 0 0 1-.5 8.5H7Z" />
+    </svg>
+  );
+}
+
 export default function App() {
   return (
     <WalletProvider>
-      <div className="min-h-screen bg-white text-slate-900">
-        <header className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
-          <div className="flex items-center gap-8">
-            <span className="text-lg font-bold">Stratus Finance</span>
-            <nav className="flex gap-4 text-sm">
-              {NAV_ITEMS.map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  className={({ isActive }) =>
-                    isActive ? "font-medium text-slate-900" : "text-slate-500 hover:text-slate-800"
-                  }
-                >
-                  {item.label}
-                </NavLink>
-              ))}
-            </nav>
+      <div className="min-h-screen">
+        <header className="sticky top-0 z-20 border-b border-white/10 bg-slate-950/60 backdrop-blur-xl">
+          <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-6 py-3.5">
+            <div className="flex items-center gap-6">
+              <span className="flex items-center gap-2 text-[15px] font-semibold tracking-tight text-white">
+                <CloudMark />
+                Stratus Finance
+              </span>
+              <nav className="flex gap-1 overflow-x-auto">
+                {NAV_ITEMS.map((item) => (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    className={({ isActive }) =>
+                      `whitespace-nowrap rounded-lg px-3 py-1.5 text-sm transition-colors ${
+                        isActive
+                          ? "bg-white/10 font-medium text-white"
+                          : "text-slate-400 hover:bg-white/5 hover:text-white"
+                      }`
+                    }
+                  >
+                    {item.label}
+                  </NavLink>
+                ))}
+              </nav>
+            </div>
+            <WalletConnectButton />
           </div>
-          <WalletConnectButton />
         </header>
 
-        <main>
+        <main className="mx-auto max-w-5xl px-4 py-10 md:px-6">
           <Routes>
             <Route path="/" element={<Buy />} />
             <Route path="/buy" element={<Buy />} />

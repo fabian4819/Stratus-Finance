@@ -128,69 +128,78 @@ export function IndividualStocks() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto p-6">
-      <h1 className="text-xl font-semibold mb-4">Individual Stocks</h1>
-      <p className="text-sm text-slate-600 mb-4">
+    <div className="mx-auto max-w-3xl">
+      <h1 className="mb-2 text-2xl font-semibold tracking-tight text-white">Individual Stocks</h1>
+      <p className="mb-4 text-sm text-slate-400">
         10 real, individually-priced stock reserves — deposited and borrowed against directly in the pool, alongside
         (not replacing) the Gold + S&amp;P 500 Index basket.
       </p>
 
       {!address && (
-        <button onClick={connect} className="mb-4 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white">
+        <button onClick={connect} className="btn-primary mb-4">
           Connect wallet for balances &amp; deposits
         </button>
       )}
 
-      <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-emerald-600">
-        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+      <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-emerald-400">
+        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
         Live market prices — Deposited value is informational; deposit/borrow/liquidation use the protocol's cached price
       </div>
 
-      <div className="rounded-lg border border-slate-200 mb-6 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-slate-200 text-left text-slate-500">
-              <th className="px-4 py-2 font-medium">Stock</th>
-              <th className="px-4 py-2 font-medium text-right">Price (per share)</th>
-              {address && <th className="px-4 py-2 font-medium text-right">Wallet (shares)</th>}
-              {address && <th className="px-4 py-2 font-medium text-right">Deposited (shares)</th>}
-              {address && <th className="px-4 py-2 font-medium text-right">Deposited value</th>}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map(({ stock, price, walletBalance, aTokenBalance }) => {
-              const depositedValueUsd = price !== null && aTokenBalance !== null ? (aTokenBalance * price) / 10n ** 18n : null;
-              return (
-                <tr key={stock.symbol} className="border-b border-slate-100 last:border-0">
-                  <td className="px-4 py-2">{stock.displayName}</td>
-                  <td className="px-4 py-2 text-right">{price !== null ? `$${Number(formatEther(price)).toFixed(2)}` : "—"}</td>
-                  {address && (
-                    <td className="px-4 py-2 text-right">{walletBalance !== null ? Number(formatEther(walletBalance)).toFixed(2) : "—"}</td>
-                  )}
-                  {address && (
-                    <td className="px-4 py-2 text-right">{aTokenBalance !== null ? Number(formatEther(aTokenBalance)).toFixed(2) : "—"}</td>
-                  )}
-                  {address && (
-                    <td className="px-4 py-2 text-right font-medium">
-                      {depositedValueUsd !== null ? `$${Number(formatEther(depositedValueUsd)).toFixed(2)}` : "—"}
+      <div className="glass-panel mb-6 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-white/10 text-left text-slate-400">
+                <th className="px-4 py-2.5 font-medium">Stock</th>
+                <th className="px-4 py-2.5 text-right font-medium">Price (per share)</th>
+                {address && <th className="px-4 py-2.5 text-right font-medium">Wallet (shares)</th>}
+                {address && <th className="px-4 py-2.5 text-right font-medium">Deposited (shares)</th>}
+                {address && <th className="px-4 py-2.5 text-right font-medium">Deposited value</th>}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map(({ stock, price, walletBalance, aTokenBalance }) => {
+                const depositedValueUsd =
+                  price !== null && aTokenBalance !== null ? (aTokenBalance * price) / 10n ** 18n : null;
+                return (
+                  <tr key={stock.symbol} className="border-b border-white/5 last:border-0 hover:bg-white/[0.03]">
+                    <td className="px-4 py-2.5 text-slate-200">{stock.displayName}</td>
+                    <td className="px-4 py-2.5 text-right tabular-nums text-white">
+                      {price !== null ? `$${Number(formatEther(price)).toFixed(2)}` : "—"}
                     </td>
-                  )}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                    {address && (
+                      <td className="px-4 py-2.5 text-right tabular-nums text-slate-300">
+                        {walletBalance !== null ? Number(formatEther(walletBalance)).toFixed(2) : "—"}
+                      </td>
+                    )}
+                    {address && (
+                      <td className="px-4 py-2.5 text-right tabular-nums text-slate-300">
+                        {aTokenBalance !== null ? Number(formatEther(aTokenBalance)).toFixed(2) : "—"}
+                      </td>
+                    )}
+                    {address && (
+                      <td className="px-4 py-2.5 text-right font-medium tabular-nums text-white">
+                        {depositedValueUsd !== null ? `$${Number(formatEther(depositedValueUsd)).toFixed(2)}` : "—"}
+                      </td>
+                    )}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {address && (
         <>
-          <div className="grid grid-cols-2 gap-3 mb-2">
+          <div className="mb-2 grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium mb-1">Stock</label>
+              <label className="field-label">Stock</label>
               <select
                 value={selectedSymbol}
                 onChange={(e) => setSelectedSymbol(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className="glass-select"
               >
                 {individualStocks.map((s) => (
                   <option key={s.symbol} value={s.symbol}>
@@ -200,34 +209,26 @@ export function IndividualStocks() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Amount (shares, not USD)</label>
+              <label className="field-label">Amount (shares, not USD)</label>
               <input
                 type="number"
                 min="0"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className="glass-input"
               />
             </div>
           </div>
 
-          <div className="flex gap-3 mb-2">
-            <button
-              onClick={handleDeposit}
-              disabled={busy || !amount}
-              className="flex-1 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-            >
+          <div className="mb-2 flex gap-3">
+            <button onClick={handleDeposit} disabled={busy || !amount} className="btn-primary flex-1">
               {busy ? "Working..." : "Approve + Deposit"}
             </button>
-            <button
-              onClick={handleWithdraw}
-              disabled={busy || !amount}
-              className="flex-1 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-900 disabled:opacity-50"
-            >
+            <button onClick={handleWithdraw} disabled={busy || !amount} className="btn-ghost flex-1">
               {busy ? "Working..." : "Withdraw"}
             </button>
           </div>
-          {status && <p className="mt-3 text-xs text-slate-600 break-all">{status}</p>}
+          {status && <p className="mt-3 break-all text-xs text-slate-400">{status}</p>}
         </>
       )}
     </div>
@@ -236,9 +237,10 @@ export function IndividualStocks() {
 
 function NotConfiguredNotice() {
   return (
-    <div className="max-w-lg mx-auto p-6 text-sm text-slate-500">
-      Individual stock addresses not configured — copy <code>deployments/hederaTestnet.json</code> values into{" "}
-      <code>frontend/.env</code> (see <code>.env.example</code>).
+    <div className="glass-panel mx-auto max-w-lg p-6 text-sm text-slate-400">
+      Individual stock addresses not configured — copy{" "}
+      <code className="inline-code">deployments/hederaTestnet.json</code> values into{" "}
+      <code className="inline-code">frontend/.env</code> (see <code className="inline-code">.env.example</code>).
     </div>
   );
 }

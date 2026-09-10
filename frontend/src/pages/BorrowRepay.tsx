@@ -147,47 +147,55 @@ export function BorrowRepay() {
   if (!addressesConfigured()) return <NotConfiguredNotice />;
 
   return (
-    <div className="max-w-lg mx-auto p-6">
-      <h1 className="text-xl font-semibold mb-4">Borrow / Repay</h1>
-      <p className="text-sm text-slate-600 mb-4">
+    <div className="mx-auto max-w-lg">
+      <h1 className="mb-2 text-2xl font-semibold tracking-tight text-white">Borrow / Repay</h1>
+      <p className="mb-6 text-sm text-slate-400">
         Borrow any of 21 assets (USDC or 20 top-market-cap crypto) against your deposited collateral.
       </p>
 
       {!address ? (
-        <button onClick={connect} className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white">
+        <button onClick={connect} className="btn-primary">
           Connect wallet to continue
         </button>
       ) : (
         <>
-          <div className="rounded-lg border border-slate-200 p-4 mb-4 text-sm">
-            <div className="flex justify-between mb-1">
-              <span className="text-slate-500">From Gold leg</span>
-              <span>{componentCapacity ? `$${Number(formatEther(componentCapacity.gold)).toFixed(2)}` : "—"} collateral</span>
+          <div className="glass-panel mb-4 p-4 text-sm">
+            <div className="stat-row mb-1">
+              <span className="stat-label">From Gold leg</span>
+              <span className="stat-value">
+                {componentCapacity ? `$${Number(formatEther(componentCapacity.gold)).toFixed(2)}` : "—"} collateral
+              </span>
             </div>
-            <div className="flex justify-between mb-1">
-              <span className="text-slate-500">From S&amp;P 500 Index leg</span>
-              <span>{componentCapacity ? `$${Number(formatEther(componentCapacity.stock)).toFixed(2)}` : "—"} collateral</span>
+            <div className="stat-row mb-1">
+              <span className="stat-label">From S&amp;P 500 Index leg</span>
+              <span className="stat-value">
+                {componentCapacity ? `$${Number(formatEther(componentCapacity.stock)).toFixed(2)}` : "—"} collateral
+              </span>
             </div>
             {stockCollateral.map((s) => (
-              <div key={s.displayName} className="flex justify-between mb-1">
-                <span className="text-slate-500">From {s.displayName}</span>
-                <span>${Number(formatEther(s.collateralValueUsd)).toFixed(2)} collateral</span>
+              <div key={s.displayName} className="stat-row mb-1">
+                <span className="stat-label">From {s.displayName}</span>
+                <span className="stat-value">${Number(formatEther(s.collateralValueUsd)).toFixed(2)} collateral</span>
               </div>
             ))}
-            <div className="flex justify-between font-medium border-t border-slate-200 pt-1 mt-1">
-              <span>Combined available to borrow</span>
-              <span>{accountData ? `$${Number(formatEther(accountData.availableBorrowsUsd)).toFixed(2)}` : "—"}</span>
+            <div className="stat-row mt-1 border-t border-white/10 pt-1 font-medium">
+              <span className="text-slate-200">Combined available to borrow</span>
+              <span className="stat-value">
+                {accountData ? `$${Number(formatEther(accountData.availableBorrowsUsd)).toFixed(2)}` : "—"}
+              </span>
             </div>
           </div>
 
-          <div className="rounded-lg border border-slate-200 p-4 mb-6 text-sm space-y-1">
-            <div className="flex justify-between">
-              <span className="text-slate-500">Current debt (all assets)</span>
-              <span>{accountData ? `$${Number(formatEther(accountData.totalDebtUsd)).toFixed(2)}` : "—"}</span>
+          <div className="glass-panel mb-6 space-y-1 p-4 text-sm">
+            <div className="stat-row">
+              <span className="stat-label">Current debt (all assets)</span>
+              <span className="stat-value">
+                {accountData ? `$${Number(formatEther(accountData.totalDebtUsd)).toFixed(2)}` : "—"}
+              </span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-slate-500">Health factor</span>
-              <span>
+            <div className="stat-row">
+              <span className="stat-label">Health factor</span>
+              <span className="stat-value">
                 {accountData
                   ? accountData.healthFactor >= MaxUint256 / 2n
                     ? "MAX (no debt)"
@@ -197,13 +205,13 @@ export function BorrowRepay() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className="block text-sm font-medium mb-1">Borrow</label>
+              <label className="field-label">Borrow</label>
               <select
                 value={borrowSymbol}
                 onChange={(e) => setBorrowSymbol(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm mb-2"
+                className="glass-select mb-2"
               >
                 {borrowableAssets.map((a) => (
                   <option key={a.symbol} value={a.symbol}>
@@ -216,22 +224,18 @@ export function BorrowRepay() {
                 min="0"
                 value={borrowAmount}
                 onChange={(e) => setBorrowAmount(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm mb-2"
+                className="glass-input mb-2"
               />
-              <button
-                onClick={handleBorrow}
-                disabled={busy || !borrowAmount}
-                className="w-full rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-              >
+              <button onClick={handleBorrow} disabled={busy || !borrowAmount} className="btn-primary w-full">
                 {busy ? "..." : "Borrow"}
               </button>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Repay</label>
+              <label className="field-label">Repay</label>
               <select
                 value={repaySymbol}
                 onChange={(e) => setRepaySymbol(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm mb-2"
+                className="glass-select mb-2"
               >
                 {borrowableAssets.map((a) => (
                   <option key={a.symbol} value={a.symbol}>
@@ -244,21 +248,18 @@ export function BorrowRepay() {
                 min="0"
                 value={repayAmount}
                 onChange={(e) => setRepayAmount(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm mb-2"
+                className="glass-input mb-2"
               />
-              <button
-                onClick={handleRepay}
-                disabled={busy || !repayAmount}
-                className="w-full rounded-lg border border-slate-900 px-4 py-2 text-sm font-medium text-slate-900 disabled:opacity-50"
-              >
+              <button onClick={handleRepay} disabled={busy || !repayAmount} className="btn-ghost w-full">
                 {busy ? "..." : "Approve + Repay"}
               </button>
             </div>
           </div>
-          <p className="mt-2 text-xs text-slate-500">
-            Your {repayAsset?.symbol ?? "—"} balance: {selectedBalance !== null && repayAsset ? formatUnits(selectedBalance, repayAsset.decimals) : "—"}
+          <p className="mt-2 text-xs text-slate-400">
+            Your {repayAsset?.symbol ?? "—"} balance:{" "}
+            {selectedBalance !== null && repayAsset ? formatUnits(selectedBalance, repayAsset.decimals) : "—"}
           </p>
-          {status && <p className="mt-3 text-xs text-slate-600 break-all">{status}</p>}
+          {status && <p className="mt-3 break-all text-xs text-slate-400">{status}</p>}
         </>
       )}
     </div>
@@ -267,9 +268,10 @@ export function BorrowRepay() {
 
 function NotConfiguredNotice() {
   return (
-    <div className="max-w-lg mx-auto p-6 text-sm text-slate-500">
-      Contract addresses not configured — copy <code>deployments/hederaTestnet.json</code> values into{" "}
-      <code>frontend/.env</code> (see <code>.env.example</code>).
+    <div className="glass-panel mx-auto max-w-lg p-6 text-sm text-slate-400">
+      Contract addresses not configured — copy <code className="inline-code">deployments/hederaTestnet.json</code>{" "}
+      values into <code className="inline-code">frontend/.env</code> (see{" "}
+      <code className="inline-code">.env.example</code>).
     </div>
   );
 }
