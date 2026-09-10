@@ -2,6 +2,7 @@ import { Contract, type ContractRunner } from "ethers";
 import { addresses } from "./addresses";
 import {
   ERC20_ABI,
+  MINTABLE_ERC20_ABI,
   STRATUS_BASKET_TOKEN_ABI,
   STRATUS_VAULT_ABI,
   LENDING_POOL_ABI,
@@ -13,6 +14,11 @@ import {
 
 export function getErc20(address: string, runner: ContractRunner) {
   return new Contract(address, ERC20_ABI, runner);
+}
+
+/** MockUSDC / MockCrypto with their open testnet `mint` — see pages/Faucet.tsx. */
+export function getMintableErc20(address: string, runner: ContractRunner) {
+  return new Contract(address, MINTABLE_ERC20_ABI, runner);
 }
 
 export function getBasketToken(runner: ContractRunner) {

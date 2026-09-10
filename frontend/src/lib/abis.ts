@@ -14,6 +14,9 @@ export const ERC20_ABI = [
   "function allowance(address owner, address spender) view returns (uint256)",
 ];
 
+/** MockUSDC and MockCrypto both expose an open `mint` for testnet faucet use. */
+export const MINTABLE_ERC20_ABI = [...ERC20_ABI, "function mint(address to, uint256 amount)"];
+
 export const STRATUS_BASKET_TOKEN_ABI = [
   ...ERC20_ABI,
   "function previewComponents(uint256 basketAmount) view returns (uint256 amountA, uint256 amountB)",
