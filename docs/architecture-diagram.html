@@ -1,0 +1,324 @@
+<title>Stratus Architecture</title>
+<style>
+  :root {
+    --bg: #f7f8fa;
+    --surface: #ffffff;
+    --border: #e5e7eb;
+    --text: #0f172a;
+    --muted: #5b6472;
+    --accent: #4f46e5;
+    --accent-soft: #eef2ff;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0b0d12;
+      --surface: #12151c;
+      --border: #262b36;
+      --text: #e6e9ef;
+      --muted: #97a1b0;
+      --accent: #818cf8;
+      --accent-soft: #1c1f3a;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0b0d12;
+    --surface: #12151c;
+    --border: #262b36;
+    --text: #e6e9ef;
+    --muted: #97a1b0;
+    --accent: #818cf8;
+    --accent-soft: #1c1f3a;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.6 "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  main {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+
+  .eyebrow {
+    font: 600 12px/1 var(--mono);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 10px;
+  }
+  h1 {
+    font-size: clamp(28px, 4vw, 38px);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin: 0 0 14px;
+    text-wrap: balance;
+  }
+  .lede {
+    max-width: 70ch;
+    color: var(--muted);
+    font-size: 16px;
+    margin: 0 0 44px;
+  }
+  .lede code, p code, li code {
+    font: 0.9em var(--mono);
+    background: var(--accent-soft);
+    color: var(--accent);
+    padding: 0.1em 0.4em;
+    border-radius: 4px;
+  }
+
+  section { margin-bottom: 56px; }
+  h2 {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 4px;
+  }
+  .section-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0 0 18px;
+    letter-spacing: -0.01em;
+  }
+
+  .diagram-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    overflow-x: auto;
+  }
+  .diagram-card pre.mermaid {
+    margin: 0 auto;
+    min-width: 900px;
+    width: fit-content;
+  }
+
+  .note {
+    max-width: 78ch;
+    color: var(--muted);
+    font-size: 14.5px;
+    margin: 18px 0 0;
+  }
+  .note strong { color: var(--text); font-weight: 600; }
+
+  .callout {
+    max-width: 78ch;
+    border-left: 3px solid var(--accent);
+    background: var(--accent-soft);
+    padding: 14px 18px;
+    border-radius: 0 10px 10px 0;
+    font-size: 14.5px;
+    color: var(--text);
+    margin-top: 40px;
+  }
+  .callout strong { color: var(--accent); }
+
+  footer {
+    margin-top: 60px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 13px;
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+</style>
+
+<main>
+  <p class="eyebrow">Stratus Finance · Hedera testnet</p>
+  <h1>Architecture &amp; user flow</h1>
+  <p class="lede">
+    What's deployed and how it talks to itself, then what a person
+    actually does, click by click. Every component named here is real
+    and live on Hedera testnet — see <code>README.md</code> §9 and
+    <code>deployments/hederaTestnet.json</code> for addresses and
+    transaction hashes.
+  </p>
+
+  <section>
+    <h2>System map</h2>
+    <p class="section-title">Infrastructure</p>
+    <div class="diagram-card">
+<pre class="mermaid">
+flowchart TB
+    subgraph OFFCHAIN["Off-chain"]
+        REDSTONE["RedStone Gateway\n(signed price data:\nXAU, USA500.Y, USDC,\n10 stocks, 20 crypto)"]
+        UPDATER["update-redstone-prices.ts\n(cache refresh — must run\nat least every 6h)"]
+        REDSTONE -->|"fetch signed\nprice package"| UPDATER
+    end
+
+    subgraph FRONTEND["Frontend (React + ethers v6)"]
+        UI["Faucet / Buy / Mint Basket /\nDeposit / Borrow / Portfolio / Markets"]
+        WALLET["MetaMask\n(Hedera testnet, chain 296 —\nauto-reconnect + account sync)"]
+        UI <--> WALLET
+        LIVECLIENT["fetchLivePrices()\n(wraps eth_call in-browser,\nzero gas)"]
+        UI --> LIVECLIENT
+    end
+
+    subgraph HEDERA["Hedera Testnet — chain 296"]
+        subgraph TOKENS["Asset Tokenization Studio (ATS)"]
+            GOLD["GOLD-x\n(real gold, diamond)"]
+            STOCKIDX["STOCK-x\n(real S&P 500, diamond)"]
+            STOCKS["10 individual stock diamonds\nAAPL-x · TSLA-x · MSFT-x · NVDA-x\nGOOGL-x · AMZN-x · META-x\nBRKB-x · AMD-x · PLTR-x"]
+        end
+
+        subgraph MOCKASSETS["Plain ERC-20 testnet assets"]
+            USDC["MockUSDC"]
+            CRYPTO["20 MockCrypto reserves\nBTC · ETH · USDT · ... · UNI"]
+        end
+
+        subgraph MARKET["StratusMarketplace"]
+            MARKETPLACE["buy(token, amount)\npulls USDC, auto-whitelists\nthe caller, sends from\npre-funded inventory"]
+        end
+
+        subgraph BASKET["Basket wrapper"]
+            BASKETTOKEN["StratusBasketToken\n(sETF, 50/50 Gold+S&P500)"]
+            VAULT["StratusVault\n(decompose / recompose)"]
+        end
+
+        subgraph ORACLE["Price oracle"]
+            REDSTONEORACLE["StratusRedstoneOracle\n(cache — updatePrice writes,\ngetAssetPrice reads,\n6h maxPriceAge, 33 feeds)"]
+            LIVEREADER["StratusLivePriceReader\n(always-live, gasless —\nnot used by the pool)"]
+        end
+
+        subgraph POOL["Lending core — Bonzo / Aave v2 fork"]
+            PROVIDER["LendingPoolAddressesProvider"]
+            LENDINGPOOL["LendingPool\n(deposit / withdraw / borrow / repay /\nliquidationCall)"]
+            CONFIGURATOR["LendingPoolConfigurator"]
+            RESERVES["33 reserves total\nGOLD-x·STOCK-x·10 stocks\n(collateral only)\nUSDC + 20 crypto\n(collateral + borrow)"]
+            RISKVIEW["StratusRiskView\n(per-component health factor,\nread-only)"]
+        end
+    end
+
+    UI -->|"eth_call / eth_sendTransaction"| LENDINGPOOL
+    UI --> BASKETTOKEN
+    UI --> VAULT
+    UI -->|"buy()"| MARKETPLACE
+    UI -->|"mint() — testnet faucet only"| USDC
+    UI -->|"mint() — testnet faucet only"| CRYPTO
+    UI -->|"getAssetPrice (cached,\nno wallet needed)"| REDSTONEORACLE
+    LIVECLIENT -->|"wrapped eth_call,\nsigned RedStone calldata"| LIVEREADER
+    UI -->|"getUserRisk"| RISKVIEW
+
+    UPDATER -->|"updatePrice(asset)\nwrapped tx"| REDSTONEORACLE
+
+    MARKETPLACE -->|"quote() reads price"| REDSTONEORACLE
+    MARKETPLACE -->|"whitelist + transfer\nfrom inventory"| GOLD
+    MARKETPLACE -->|"whitelist + transfer\nfrom inventory"| STOCKIDX
+    MARKETPLACE -->|"whitelist + transfer\nfrom inventory"| STOCKS
+
+    VAULT -->|"holds & moves"| GOLD
+    VAULT -->|"holds & moves"| STOCKIDX
+    BASKETTOKEN -->|"mint / redeem"| GOLD
+    BASKETTOKEN -->|"mint / redeem"| STOCKIDX
+
+    LENDINGPOOL --> RESERVES
+    RESERVES -.->|"underlying"| GOLD
+    RESERVES -.->|"underlying"| STOCKIDX
+    RESERVES -.->|"underlying"| STOCKS
+    RESERVES -.->|"underlying"| USDC
+    RESERVES -.->|"underlying"| CRYPTO
+
+    LENDINGPOOL -->|"getAssetPrice per reserve"| REDSTONEORACLE
+    RISKVIEW -->|"getUserAccountData"| LENDINGPOOL
+    RISKVIEW -->|"getAssetPrice"| REDSTONEORACLE
+    PROVIDER -.->|"setPriceOracle"| REDSTONEORACLE
+    CONFIGURATOR -.->|"batchInitReserve /\nconfigureReserveAsCollateral"| RESERVES
+
+    style OFFCHAIN fill:#f5f0e8,stroke:#9c8a6e,color:#1a1a1a
+    style FRONTEND fill:#eef3fb,stroke:#5b7ba8,color:#1a1a1a
+    style HEDERA fill:#fbfbfb,stroke:#333,color:#1a1a1a
+    style TOKENS fill:#fdf0e8,stroke:#c17a3f,color:#1a1a1a
+    style MOCKASSETS fill:#f4f4f4,stroke:#777,color:#1a1a1a
+    style MARKET fill:#eaf3ea,stroke:#4a8f4a,color:#1a1a1a
+    style BASKET fill:#f0f7ee,stroke:#5f9959,color:#1a1a1a
+    style ORACLE fill:#f7eef7,stroke:#9c5d9c,color:#1a1a1a
+    style POOL fill:#eef7f7,stroke:#3f8c8c,color:#1a1a1a
+</pre>
+    </div>
+    <p class="note">
+      <strong>Three independent paths into the pool.</strong> The basket
+      (GOLD-x + STOCK-x, wrapped as sETF) is one path; the 10 individual
+      stocks are deposited directly — same <code>LendingPool.deposit</code>/<code>withdraw</code>,
+      no wrapper; the 20 crypto reserves are collateral- <em>and</em>
+      borrow-enabled, seeded with real pool liquidity. All three read
+      prices from the same <code>StratusRedstoneOracle</code>, which is a
+      cache, not a live feed: <code>update-redstone-prices.ts</code> has to
+      run at least every 6 hours or <code>getAssetPrice</code> starts
+      reverting with <code>"stale price"</code>. Display prices never hit
+      that ceiling — <code>StratusLivePriceReader</code> wraps a fresh
+      signed read on every call, independent of the cache.
+    </p>
+  </section>
+
+  <section>
+    <h2>Click by click</h2>
+    <p class="section-title">User flow</p>
+    <div class="diagram-card">
+<pre class="mermaid">
+flowchart TD
+    START(["Open the app"]) --> CONNECT["Connect wallet\n(auto-reconnects on reload,\nsyncs if account is switched\nin MetaMask)"]
+
+    CONNECT --> FAUCET["Faucet\nclaim test USDC\n(+ mock crypto to repay later)"]
+    FAUCET --> BUY["Buy\npurchase Gold / S&P 500 /\nany of 10 stocks with USDC —\nfirst-time buyer auto-whitelisted"]
+
+    BUY --> CHOICE{"Basket or\nindividual stock?"}
+
+    CHOICE -->|"Basket\n(Gold + S&P 500)"| MINT["Mint Basket\napprove GOLD-x + STOCK-x\n→ mint sETF"]
+    MINT --> DEPOSIT["Deposit & Decompose\napprove sETF → deposit\n→ splits into 2 isolated\nreserve positions"]
+
+    CHOICE -->|"Individual stock\n(e.g. Apple, Tesla, ...)"| PICK["Markets\nbrowse 10 live prices\n(no wallet needed)"]
+    PICK --> DEPOSIT2["Approve + Deposit\nchosen stock directly\ninto the pool"]
+
+    DEPOSIT --> BORROW["Borrow\npick any of 21 assets\n(USDC or 20 crypto)\nagainst combined capacity"]
+    DEPOSIT2 --> BORROW
+
+    BORROW --> PORTFOLIO["Portfolio\nlive prices, combined\nhealth factor (real,\nenforced), per-leg\nheuristic bars"]
+
+    PORTFOLIO --> HEALTHY{"Health factor OK?"}
+    HEALTHY -->|"Yes"| REPAY["Repay debt,\nwithdraw collateral"]
+    REPAY -->|"basket path only"| RECOMPOSE["Recompose\nback into sETF"]
+
+    HEALTHY -->|"No — a price move\npushed HF below 1\n(demo: owner-triggered\nstress, disclosed via\nbanner)"| LIQUIDATED["Liquidator calls\nliquidationCall on the\nstressed leg only —\nevery other position\nis provably untouched"]
+    LIQUIDATED --> PORTFOLIO
+
+    style START fill:#1a1a1a,color:#fff
+    style FAUCET fill:#f4f4f4,stroke:#777,color:#1a1a1a
+    style BUY fill:#eaf3ea,stroke:#4a8f4a,color:#1a1a1a
+    style CHOICE fill:#fdf0e8,stroke:#c17a3f,color:#1a1a1a
+    style HEALTHY fill:#fdf0e8,stroke:#c17a3f,color:#1a1a1a
+    style LIQUIDATED fill:#fbe9e9,stroke:#b04a4a,color:#1a1a1a
+    style PORTFOLIO fill:#f7eef7,stroke:#9c5d9c,color:#1a1a1a
+</pre>
+    </div>
+    <p class="note">
+      <strong>The isolation guarantee, visually.</strong> Whichever path a
+      user takes — basket or individual stock — a bad price move only
+      threatens the reserve it actually hit. Liquidation seizes that one
+      leg; every other position the user holds is provably unchanged
+      (verified on-chain both directions — see <code>PLAN.md</code> Gate 4).
+    </p>
+  </section>
+
+  <div class="callout">
+    <strong>Known gap, not a feature:</strong> sETF is a plain ERC-20 and
+    is technically transferable via any wallet's own send function, but
+    the app has no dedicated Transfer page for it (or for any token) yet.
+    The only in-app path from "own a tokenized RWA" to "borrow against
+    it" is Deposit/Markets, not a peer-to-peer send.
+  </div>
+
+  <footer>
+    Source: <a href="https://github.com/fabian4819/Stratus-Finance/blob/main/docs/architecture-and-flow-diagrams.md">docs/architecture-and-flow-diagrams.md</a>
+    · addresses and tx hashes in <code>deployments/hederaTestnet.json</code>
+  </footer>
+</main>
