@@ -43,6 +43,18 @@ export async function connectMetaMask(): Promise<{ provider: BrowserProvider; ad
   return { provider, address };
 }
 
+/** Restores a session on page load without ever prompting. Unlike
+ * eth_requestAccounts, eth_accounts just returns whichever accounts this
+ * site is already authorized for (or an empty array if none) — safe to
+ * call on every mount. */
+export async function getAuthorizedAccount(): Promise<{ provider: BrowserProvider; address: string } | null> {
+  const ethereum = (window as unknown as { ethereum?: any }).ethereum;
+  if (!ethereum) return null;
+  const accounts: string[] = await ethereum.request({ method: "eth_accounts" }).catch(() => []);
+  if (!accounts.length) return null;
+  return { provider: new BrowserProvider(ethereum), address: accounts[0] };
+}
+
 async function switchToHederaTestnet(ethereum: any): Promise<void> {
   try {
     await ethereum.request({

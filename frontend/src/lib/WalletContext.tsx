@@ -1,6 +1,6 @@
-import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { BrowserProvider, JsonRpcSigner } from "ethers";
-import { connectMetaMask } from "./wallet";
+import { connectMetaMask, getAuthorizedAccount } from "./wallet";
 
 interface WalletState {
   provider: BrowserProvider | null;
@@ -50,6 +50,49 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     setAddress(null);
     setError(null);
   }, []);
+
+  // Reconnect silently on page load — a reload used to always drop back to
+  // the "Connect Wallet" button even though MetaMask still had this site
+  // authorized. eth_accounts never prompts, so this is safe to run on
+  // every mount.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const restored = await getAuthorizedAccount();
+      if (!restored || cancelled) return;
+      const signer = await restored.provider.getSigner();
+      if (cancelled) return;
+      setProvider(restored.provider);
+      setSigner(signer);
+      setAddress(restored.address);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Keep the app in sync when the account is changed or unlinked from
+  // inside the MetaMask extension itself, instead of showing a stale
+  // address until the next manual reconnect.
+  useEffect(() => {
+    const ethereum = (window as unknown as { ethereum?: any }).ethereum;
+    if (!ethereum?.on) return;
+
+    const handleAccountsChanged = async (accounts: string[]) => {
+      if (!accounts.length) {
+        disconnect();
+        return;
+      }
+      const nextProvider = new BrowserProvider(ethereum);
+      const signer = await nextProvider.getSigner();
+      setProvider(nextProvider);
+      setSigner(signer);
+      setAddress(accounts[0]);
+    };
+
+    ethereum.on("accountsChanged", handleAccountsChanged);
+    return () => ethereum.removeListener?.("accountsChanged", handleAccountsChanged);
+  }, [disconnect]);
 
   return (
     <WalletContext.Provider value={{ provider, signer, address, connecting, error, connect, disconnect }}>
