@@ -19,6 +19,18 @@ export async function connectMetaMask(): Promise<{ provider: BrowserProvider; ad
   }
 
   const provider = new BrowserProvider(ethereum);
+
+  // eth_requestAccounts alone silently returns whatever account this site
+  // was already authorized for last time — it does NOT re-prompt, even if
+  // the user has since switched their active account in the MetaMask
+  // extension. Requesting permissions first forces MetaMask's account
+  // picker to show every time, so switching wallets actually takes effect.
+  try {
+    await provider.send("wallet_requestPermissions", [{ eth_accounts: {} }]);
+  } catch {
+    // Some non-MetaMask injected wallets don't support this RPC method —
+    // fall back to the plain request below, just without the forced picker.
+  }
   await provider.send("eth_requestAccounts", []);
 
   const network = await provider.getNetwork();
