@@ -9,6 +9,7 @@ interface WalletState {
   connecting: boolean;
   error: string | null;
   connect: () => Promise<void>;
+  disconnect: () => void;
 }
 
 const WalletContext = createContext<WalletState | undefined>(undefined);
@@ -39,8 +40,19 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // MetaMask has no reliable programmatic "revoke this site" call — the
+  // conventional dApp pattern (Uniswap, Aave, ...) is to just clear local
+  // session state. The wallet extension itself stays connected; the next
+  // "Connect Wallet" click re-requests accounts.
+  const disconnect = useCallback(() => {
+    setProvider(null);
+    setSigner(null);
+    setAddress(null);
+    setError(null);
+  }, []);
+
   return (
-    <WalletContext.Provider value={{ provider, signer, address, connecting, error, connect }}>
+    <WalletContext.Provider value={{ provider, signer, address, connecting, error, connect, disconnect }}>
       {children}
     </WalletContext.Provider>
   );
