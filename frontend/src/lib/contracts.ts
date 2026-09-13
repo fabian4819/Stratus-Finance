@@ -3,8 +3,6 @@ import { addresses } from "./addresses";
 import {
   ERC20_ABI,
   MINTABLE_ERC20_ABI,
-  STRATUS_BASKET_TOKEN_ABI,
-  STRATUS_VAULT_ABI,
   LENDING_POOL_ABI,
   PROTOCOL_DATA_PROVIDER_ABI,
   RISK_VIEW_ABI,
@@ -19,14 +17,6 @@ export function getErc20(address: string, runner: ContractRunner) {
 /** MockUSDC / MockCrypto with their open testnet `mint` — see pages/Faucet.tsx. */
 export function getMintableErc20(address: string, runner: ContractRunner) {
   return new Contract(address, MINTABLE_ERC20_ABI, runner);
-}
-
-export function getBasketToken(runner: ContractRunner) {
-  return new Contract(addresses.stratusBasketToken, STRATUS_BASKET_TOKEN_ABI, runner);
-}
-
-export function getVault(runner: ContractRunner) {
-  return new Contract(addresses.stratusVault, STRATUS_VAULT_ABI, runner);
 }
 
 export function getPool(runner: ContractRunner) {
@@ -47,14 +37,6 @@ export function getRiskView(runner: ContractRunner) {
  * continuous push) — this just reads whatever's currently cached. */
 export function getOracle(runner: ContractRunner) {
   return new Contract(addresses.stratusRedstoneOracle, ORACLE_ABI, runner);
-}
-
-export function getGoldToken(runner: ContractRunner) {
-  return getErc20(addresses.goldToken, runner);
-}
-
-export function getStockToken(runner: ContractRunner) {
-  return getErc20(addresses.stockIndexToken, runner);
 }
 
 export function getUsdc(runner: ContractRunner) {

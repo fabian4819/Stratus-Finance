@@ -74,13 +74,18 @@ export function BorrowRepay() {
     const stock = risk.components[1];
     setComponentCapacity({ gold: gold.collateralValueUsd, stock: stock.collateralValueUsd });
 
-    // StratusRiskView is a fixed 2-slot view (Gold + S&P 500 Index only) —
-    // individual stock collateral isn't in it, but it DOES contribute to
-    // "Available to borrow" (pool-level, asset-agnostic). Compute each
-    // stock's own collateral value client-side (aToken balance × oracle
-    // price) so a depositor can see where their capacity comes from.
+    // StratusRiskView is a fixed 2-slot view (Gold + S&P 500 Index only,
+    // shown above as componentCapacity) — everything else in
+    // individualStocks isn't in it, but DOES contribute to "Available to
+    // borrow" (pool-level, asset-agnostic). Compute each one's own
+    // collateral value client-side (aToken balance × oracle price) so a
+    // depositor can see where their capacity comes from. Gold/S&P 500 are
+    // excluded here since componentCapacity already covers them — listing
+    // both would double-count the same two reserves.
     const perStock = await Promise.all(
-      individualStocks.map(async (s) => {
+      individualStocks
+        .filter((s) => s.symbol !== "GOLD-x" && s.symbol !== "STOCK-x")
+        .map(async (s) => {
         const aToken = getErc20(s.aTokenAddress, signer);
         const [balance, price]: [bigint, bigint] = await Promise.all([
           aToken.balanceOf(address),

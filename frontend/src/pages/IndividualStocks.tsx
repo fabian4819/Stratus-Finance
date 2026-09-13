@@ -14,10 +14,9 @@ interface StockRow {
   aTokenBalance: bigint | null;
 }
 
-/** 10 individual real-stock reserves, added alongside (not replacing) the
- * GOLD-x/STOCK-x basket — see docs/phase-4-individual-stocks.md. Each is
- * deposited/borrowed against directly in the pool (LendingPool.deposit),
- * not wrapped by StratusBasketToken. */
+/** All 12 spot RWA reserves (Gold, S&P 500 Index, 10 stocks) — see
+ * lib/individualStocks.ts. Each is deposited/borrowed against directly
+ * in the pool (LendingPool.deposit), no wrapper token. */
 export function IndividualStocks() {
   const { signer, address, connect } = useWallet();
   const [rows, setRows] = useState<StockRow[]>([]);
@@ -125,7 +124,7 @@ export function IndividualStocks() {
     <div>
       <PageHeader
         title="Markets"
-        subtitle="10 real, individually-priced stock reserves. Deposit and borrow against each directly in the pool, alongside the Gold + S&P 500 Index basket."
+        subtitle="12 real, individually-priced spot reserves — Gold, the S&P 500 Index, and 10 stocks. Deposit and borrow against each directly in the pool, no wrapper token required."
       />
 
       <div className="mb-4 flex items-center gap-2 text-xs font-medium text-emerald-600">

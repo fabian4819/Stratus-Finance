@@ -3,8 +3,6 @@ import { WalletProvider } from "./lib/WalletContext";
 import { WalletConnectButton } from "./components/WalletConnectButton";
 import { Buy } from "./pages/Buy";
 import { Faucet } from "./pages/Faucet";
-import { MintBasket } from "./pages/MintBasket";
-import { Deposit } from "./pages/Deposit";
 import { BorrowRepay } from "./pages/BorrowRepay";
 import { RiskPanel } from "./pages/RiskPanel";
 import { IndividualStocks } from "./pages/IndividualStocks";
@@ -12,8 +10,6 @@ import { IndividualStocks } from "./pages/IndividualStocks";
 const NAV_ITEMS = [
   { to: "/faucet", label: "Faucet" },
   { to: "/buy", label: "Buy" },
-  { to: "/mint", label: "Mint Basket" },
-  { to: "/deposit", label: "Deposit" },
   { to: "/borrow", label: "Borrow" },
   { to: "/risk", label: "Portfolio" },
   { to: "/stocks", label: "Markets" },
@@ -81,8 +77,6 @@ export default function App() {
             <Route path="/" element={<Buy />} />
             <Route path="/faucet" element={<Faucet />} />
             <Route path="/buy" element={<Buy />} />
-            <Route path="/mint" element={<MintBasket />} />
-            <Route path="/deposit" element={<Deposit />} />
             <Route path="/borrow" element={<BorrowRepay />} />
             <Route path="/risk" element={<RiskPanel />} />
             <Route path="/stocks" element={<IndividualStocks />} />

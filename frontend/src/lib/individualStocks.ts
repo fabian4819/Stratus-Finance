@@ -1,15 +1,23 @@
 /**
- * The 10 individual real-stock reserves, added alongside (not replacing)
- * the original GOLD-x/STOCK-x basket — see
- * docs/phase-4-individual-stocks.md. Each is its own ATS Equity token and
- * its own pool reserve, deposited/borrowed against directly (not wrapped
- * by StratusBasketToken).
+ * All spot RWA reserves deposited/borrowed against directly in the pool
+ * (plain LendingPool.deposit/withdraw, no wrapper) — Gold, the S&P 500
+ * Index, and 10 individual stocks. See docs/phase-4-individual-stocks.md.
  *
- * An 11th candidate, CVX (intended as Chevron), was deployed then dropped
- * after its RedStone price turned out to be Convex Finance's crypto
- * token, not Chevron stock — see tokenization/config/individual-stocks.json.
- * Its on-chain infra exists but is unused and intentionally absent here.
+ * Gold and the S&P 500 Index used to be reachable only via
+ * StratusBasketToken (mint sETF from both, then vault.depositBasket to
+ * decompose into these same two reserves) — removed because it forced a
+ * buyer of just one of the two into a dead end. StratusRiskView never
+ * required the basket either (getUserRisk takes two arbitrary reserve
+ * addresses), so folding these in here needed no contract change.
+ *
+ * An 11th stock candidate, CVX (intended as Chevron), was deployed then
+ * dropped after its RedStone price turned out to be Convex Finance's
+ * crypto token, not Chevron stock — see
+ * tokenization/config/individual-stocks.json. Its on-chain infra exists
+ * but is unused and intentionally absent here.
  */
+import { addresses } from "./addresses";
+
 export interface IndividualStock {
   symbol: string; // on-chain ATS symbol, e.g. "AAPL-x"
   displayName: string; // clean name for the UI, e.g. "Apple"
@@ -23,6 +31,8 @@ function importEnv(key: string): string {
 }
 
 export const individualStocks: IndividualStock[] = [
+  { symbol: "GOLD-x", displayName: "Gold", tokenAddress: addresses.goldToken, aTokenAddress: addresses.aTokenGold, redstoneFeedId: "XAU" },
+  { symbol: "STOCK-x", displayName: "S&P 500 Index", tokenAddress: addresses.stockIndexToken, aTokenAddress: addresses.aTokenStock, redstoneFeedId: "USA500.Y" },
   { symbol: "AAPL-x", displayName: "Apple", tokenAddress: importEnv("VITE_AAPL_TOKEN"), aTokenAddress: importEnv("VITE_ATOKEN_AAPL"), redstoneFeedId: "AAPL" },
   { symbol: "TSLA-x", displayName: "Tesla", tokenAddress: importEnv("VITE_TSLA_TOKEN"), aTokenAddress: importEnv("VITE_ATOKEN_TSLA"), redstoneFeedId: "TSLA" },
   { symbol: "MSFT-x", displayName: "Microsoft", tokenAddress: importEnv("VITE_MSFT_TOKEN"), aTokenAddress: importEnv("VITE_ATOKEN_MSFT"), redstoneFeedId: "MSFT" },
