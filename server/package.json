@@ -1,0 +1,16 @@
+{
+  "name": "@stratus-finance/server",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Premium AI yield advisor — x402-gated endpoint, DeepSeek-powered, self-hosted payment verification against the Hedera mirror node.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "ethers": "^6.13.2",
+    "express": "^4.19.2"
+  }
+}

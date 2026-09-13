@@ -6,7 +6,8 @@
   "workspaces": [
     "contracts",
     "tokenization",
-    "frontend"
+    "frontend",
+    "server"
   ],
   "scripts": {
     "compile": "npm run compile --workspace=contracts",
@@ -14,7 +15,8 @@
     "deploy:testnet": "npm run deploy:testnet --workspace=contracts",
     "demo:liquidation": "npm run demo:liquidation --workspace=contracts",
     "issue:assets": "npm run issue:assets --workspace=tokenization",
-    "dev": "npm run dev --workspace=frontend"
+    "dev": "npm run dev --workspace=frontend",
+    "advisor-server": "npm run start --workspace=server"
   },
   "license": "MIT"
 }
