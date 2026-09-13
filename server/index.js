@@ -149,6 +149,13 @@ async function getDeepSeekPicks({ riskPreference, supply, stake, portfolio }) {
   return validated;
 }
 
-app.listen(PORT, () => {
-  console.log(`Stratus advisor server listening on :${PORT}`);
-});
+// Vercel deploys this as a Node backend (introspects the exported app,
+// wraps it as a Lambda) — it never calls .listen() itself, so only do
+// that for local/`npm run advisor-server` use.
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`Stratus advisor server listening on :${PORT}`);
+  });
+}
+
+module.exports = app;
