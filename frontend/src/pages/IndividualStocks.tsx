@@ -94,7 +94,7 @@ export function IndividualStocks() {
       setStatus(`Deposited ${amount} ${selected.displayName}. Tx ${tx.hash.slice(0, 10)}…`);
       await refresh();
     } catch (e) {
-      setStatus(e instanceof Error ? e.message : "Deposit failed");
+      setStatus(e instanceof Error && e.message ? e.message : "Deposit failed");
     } finally {
       setBusy(false);
     }
@@ -114,7 +114,7 @@ export function IndividualStocks() {
       setStatus(`Withdrew ${amount} ${selected.displayName}. Tx ${tx.hash.slice(0, 10)}…`);
       await refresh();
     } catch (e) {
-      setStatus(e instanceof Error ? e.message : "Withdraw failed");
+      setStatus(e instanceof Error && e.message ? e.message : "Withdraw failed");
     } finally {
       setBusy(false);
     }

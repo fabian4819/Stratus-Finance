@@ -80,7 +80,7 @@ export function Buy() {
         console.error("Post-buy refresh failed:", refreshErr);
       }
     } catch (e) {
-      setStatus(e instanceof Error ? e.message : "Buy failed");
+      setStatus(e instanceof Error && e.message ? e.message : "Buy failed");
     } finally {
       setBusy(false);
     }

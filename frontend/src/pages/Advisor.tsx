@@ -92,7 +92,7 @@ export function Advisor() {
       const { supply, stake } = await loadCandidates();
       setFree(rankCandidates(supply, stake, risk));
     } catch (e) {
-      setStatus(e instanceof Error ? e.message : "Failed to load candidates");
+      setStatus(e instanceof Error && e.message ? e.message : "Failed to load candidates");
     } finally {
       setBusy(false);
     }
@@ -110,7 +110,7 @@ export function Advisor() {
       setPremiumSource(result.source);
       setStatus(null);
     } catch (e) {
-      setStatus(e instanceof Error ? e.message : "Premium request failed");
+      setStatus(e instanceof Error && e.message ? e.message : "Premium request failed");
     } finally {
       setBusy(false);
     }
@@ -347,7 +347,7 @@ function ExternalSupplyAction({
       await tx.wait();
       setStatus(`Supplied ${amount} ${symbol} on ${protocol}. Tx ${tx.hash.slice(0, 10)}…`);
     } catch (e) {
-      setStatus(e instanceof Error ? e.message : "Supply failed");
+      setStatus(e instanceof Error && e.message ? e.message : "Supply failed");
     } finally {
       setBusy(false);
     }

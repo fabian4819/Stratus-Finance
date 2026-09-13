@@ -125,7 +125,7 @@ export function BorrowRepay() {
         console.error("Post-borrow refresh failed:", refreshErr);
       }
     } catch (e) {
-      setStatus(e instanceof Error ? e.message : "Borrow failed");
+      setStatus(e instanceof Error && e.message ? e.message : "Borrow failed");
     } finally {
       setBusy(false);
     }
@@ -155,7 +155,7 @@ export function BorrowRepay() {
         console.error("Post-repay refresh failed:", refreshErr);
       }
     } catch (e) {
-      setStatus(e instanceof Error ? e.message : "Repay failed");
+      setStatus(e instanceof Error && e.message ? e.message : "Repay failed");
     } finally {
       setBusy(false);
     }

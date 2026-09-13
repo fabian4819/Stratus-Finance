@@ -77,7 +77,7 @@ export function MintBasket() {
         console.error("Post-mint refresh failed:", refreshErr);
       }
     } catch (e) {
-      setStatus(e instanceof Error ? e.message : "Mint failed");
+      setStatus(e instanceof Error && e.message ? e.message : "Mint failed");
     } finally {
       setBusy(false);
     }

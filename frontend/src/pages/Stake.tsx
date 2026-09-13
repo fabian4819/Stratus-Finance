@@ -69,7 +69,7 @@ export function Stake() {
       setStatus(`Staked ${amount} ${selected.symbol}. Tx ${tx.hash.slice(0, 10)}…`);
       await refresh();
     } catch (e) {
-      setStatus(e instanceof Error ? e.message : "Stake failed");
+      setStatus(e instanceof Error && e.message ? e.message : "Stake failed");
     } finally {
       setBusy(false);
     }
@@ -88,7 +88,7 @@ export function Stake() {
       setStatus(`Unstaked ${amount} ${selected.symbol}. Tx ${tx.hash.slice(0, 10)}…`);
       await refresh();
     } catch (e) {
-      setStatus(e instanceof Error ? e.message : "Unstake failed");
+      setStatus(e instanceof Error && e.message ? e.message : "Unstake failed");
     } finally {
       setBusy(false);
     }
@@ -106,7 +106,7 @@ export function Stake() {
       setStatus(`Claimed. Tx ${tx.hash.slice(0, 10)}…`);
       await refresh();
     } catch (e) {
-      setStatus(e instanceof Error ? e.message : "Claim failed");
+      setStatus(e instanceof Error && e.message ? e.message : "Claim failed");
     } finally {
       setBusy(false);
     }

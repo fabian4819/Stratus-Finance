@@ -87,9 +87,17 @@ export function Deposit() {
       const tx = await vault.depositBasket(basketAmount, { gasLimit: 3_500_000 });
       await tx.wait();
       setStatus(`Deposited ${amount} sETF. Tx ${tx.hash.slice(0, 10)}…`);
-      await refresh();
+      // A flaky read here (seen in real testing — StratusRiskView's
+      // getUserRisk occasionally throws on Hedera's public RPC relay)
+      // must never overwrite the success message above with a scary
+      // error for a deposit that already landed on-chain.
+      try {
+        await refresh();
+      } catch (refreshErr) {
+        console.error("Post-deposit refresh failed:", refreshErr);
+      }
     } catch (e) {
-      setStatus(e instanceof Error ? e.message : "Deposit failed");
+      setStatus(e instanceof Error && e.message ? e.message : "Deposit failed");
     } finally {
       setBusy(false);
     }

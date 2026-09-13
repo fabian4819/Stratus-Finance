@@ -53,7 +53,7 @@ export function Faucet() {
       setStatus(`Claimed ${amount} ${asset.symbol}. Tx ${tx.hash.slice(0, 10)}…`);
       await refresh();
     } catch (e) {
-      setStatus(e instanceof Error ? e.message : "Claim failed");
+      setStatus(e instanceof Error && e.message ? e.message : "Claim failed");
     } finally {
       setBusy(false);
     }
