@@ -51,24 +51,42 @@ Verified end-to-end directly against the deployed contract: staked
 BTC, watched `pendingReward` accrue, `claim()` minted STRAT, `unstake()`
 returned the full principal.
 
-## Part 3: AI yield advisor, with a real x402 premium tier
+## Part 3: AI yield advisor, with real cross-protocol supply and an x402 premium tier
 
-**Scope, stated plainly.** The advisor ranks across the two yield
-surfaces that actually exist in Stratus — lending-pool supply (12 spot
-RWA reserves: Gold, S&P 500 Index, 10 stocks — the ones with an actual
-deposit UI) and StratusStaking (20 crypto reserves). No external DeFi
-protocol integrations exist to farm across, and none are built here.
+**Scope, stated plainly.** The advisor ranks across three yield
+surfaces: two inside Stratus — lending-pool supply (12 spot RWA
+reserves: Gold, S&P 500 Index, 10 stocks — the ones with an actual
+deposit UI) and StratusStaking (20 crypto reserves) — plus **Bonzo
+Finance's real Hedera testnet deployment**, read-only, as additional
+"supply" candidates ranked in the same bucket as Stratus's own. Bonzo
+is a genuinely different, independently-deployed lending protocol —
+not a Stratus instance, even though Stratus's own lending core also
+happens to be a Bonzo fork. Its real testnet addresses (LendingPool
+`0xD2d18d…dE516`, `AaveProtocolDataProvider` `0xf7330B…62AFa`, and
+USDC/HBARX/SAUCE/WHBAR reserve addresses) came straight from Bonzo's
+own public repo
+([`Bonzo-Labs/bonzo-finance-contracts`](https://github.com/Bonzo-Labs/bonzo-finance-contracts),
+`scripts/outputReserveData.json`) — not guessed, not mocked. Verified
+live: real `liquidityRate` reads back (USDC 0.008%, HBARX 2.40%, SAUCE
+~0%, WHBAR 51.43% APY at time of writing — genuine testnet economics,
+not synthetic numbers).
+
 It's an **advisor, not an agent**: it ranks and explains, the user
-always clicks through and executes the transaction themselves — it
-never holds a signer or submits a transaction on anyone's behalf.
+always clicks through and executes the transaction themselves. A Bonzo
+pick links out to Bonzo's own testnet app (`testnet.bonzo.finance`) —
+Stratus never deposits into Bonzo, or any protocol, on the user's
+behalf.
 
 **Free tier** (`frontend/src/lib/ai/advisor.ts`) is a deterministic,
-zero-network scorer — real on-chain reads (pool `liquidityRate` for
-supply APY, `StratusStaking.pools()` for a token-denominated staking
+read-only scorer (no LLM call) — real on-chain reads (pool
+`liquidityRate` for supply APY, from both Stratus's own pool and
+Bonzo's; `StratusStaking.pools()` for a token-denominated staking
 rate), two independently-sorted buckets, no fake blending across units.
-Supply APY is a real USD-denominated percentage; the staking rate is
-STRAT emitted per staked token per year — STRAT has no price feed, so
-it is *not* comparable to APY, and the code keeps the two visually and
+Supply APY is directly comparable across Stratus and Bonzo (same
+underlying Aave-v2 rate math, real USD-denominated percentage either
+way); the staking rate is STRAT emitted per staked token per year —
+STRAT has no price feed, so it is *not* comparable to APY, and the code
+keeps the two visually and
 numerically separate rather than inventing a blended number.
 
 **Premium tier** pays 1 USDC for a DeepSeek-reasoned recommendation,

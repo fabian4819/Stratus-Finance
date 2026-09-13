@@ -80,9 +80,17 @@ async function getDeepSeekPicks({ riskPreference, supply, stake, portfolio }) {
   if (!DEEPSEEK_API_KEY) throw new Error("DEEPSEEK_API_KEY not configured");
 
   const candidateList = [
-    ...supply.map((c) => ({ target: "supply", symbol: c.symbol, displayName: c.displayName, apyPct: c.apyPct })),
+    ...supply.map((c) => ({
+      target: "supply",
+      protocol: c.protocol || "Stratus",
+      externalUrl: c.externalUrl,
+      symbol: c.symbol,
+      displayName: c.displayName,
+      apyPct: c.apyPct,
+    })),
     ...stake.map((c) => ({
       target: "stake",
+      protocol: "Stratus",
       symbol: c.symbol,
       displayName: c.displayName,
       stratPerTokenPerYear: c.stratPerTokenPerYear,
@@ -92,13 +100,17 @@ async function getDeepSeekPicks({ riskPreference, supply, stake, portfolio }) {
   const systemPrompt = [
     "You are a DeFi yield allocation advisor for Stratus Finance, a lending protocol on Hedera testnet.",
     "You will be given: a risk preference, a list of candidate yield options, and the user's current portfolio.",
-    "Each candidate is either target='supply' (lend the asset into the pool, apyPct = real USD-denominated APY)",
-    "or target='stake' (stake the asset in a separate rewards pool, stratPerTokenPerYear = STRAT reward tokens",
+    "Each candidate has a 'protocol' field — most are 'Stratus' (this app's own pool/staking), but some 'supply'",
+    "candidates are 'Bonzo Finance', a genuinely different, independently-deployed lending protocol on Hedera",
+    "testnet (read-only real rates, not a Stratus product) — a real cross-protocol comparison, treat it as such",
+    "in your reasoning when relevant (e.g. note it requires the user to act on a different app).",
+    "Each candidate is either target='supply' (lend the asset, apyPct = real USD-denominated APY)",
+    "or target='stake' (stake the asset in Stratus's rewards pool, stratPerTokenPerYear = STRAT reward tokens",
     "per staked token per year — STRAT has no price feed, so this is NOT a USD APY, treat it as a distinct,",
     "unpriced signal, not directly comparable to apyPct).",
     "Pick 2-4 candidates from the given list, ranked best-first for the stated risk preference.",
-    "You MUST only use symbol+target pairs that appear in the candidate list — never invent one.",
-    "Respond with ONLY a JSON object: {\"picks\":[{\"symbol\":string,\"target\":\"supply\"|\"stake\",\"reasoning\":string,\"confidence\":\"low\"|\"medium\"|\"high\"}]}.",
+    "You MUST only use symbol+target+protocol triples that appear in the candidate list — never invent one.",
+    "Respond with ONLY a JSON object: {\"picks\":[{\"symbol\":string,\"target\":\"supply\"|\"stake\",\"protocol\":string,\"reasoning\":string,\"confidence\":\"low\"|\"medium\"|\"high\"}]}.",
   ].join(" ");
 
   const userPrompt = JSON.stringify({ riskPreference, candidates: candidateList, portfolio: portfolio || null });
@@ -134,10 +146,14 @@ async function getDeepSeekPicks({ riskPreference, supply, stake, portfolio }) {
   // the real candidate data by looking each pick up in the list we sent.
   const validated = [];
   for (const pick of parsed.picks) {
-    const match = candidateList.find((c) => c.symbol === pick.symbol && c.target === pick.target);
+    const match = candidateList.find(
+      (c) => c.symbol === pick.symbol && c.target === pick.target && c.protocol === (pick.protocol || "Stratus")
+    );
     if (!match) continue; // silently drop anything not in the real candidate list
     validated.push({
       target: match.target,
+      protocol: match.protocol,
+      externalUrl: match.externalUrl,
       symbol: match.symbol,
       displayName: match.displayName,
       rate: match.target === "supply" ? match.apyPct : match.stratPerTokenPerYear,

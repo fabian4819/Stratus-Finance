@@ -14,17 +14,23 @@ function rankCandidates(supply, stake, risk) {
 }
 
 function toPicks(candidates) {
-  return candidates.map((c) => ({
-    target: c.target,
-    symbol: c.symbol,
-    displayName: c.displayName,
-    rate: c.target === "supply" ? c.apyPct : c.stratPerTokenPerYear,
-    reasoning:
-      c.target === "supply"
-        ? `Supplying ${c.displayName} to the pool currently earns ${c.apyPct.toFixed(2)}% APY.`
-        : `Staking ${c.displayName} currently emits ~${c.stratPerTokenPerYear.toFixed(4)} STRAT per token per year.`,
-    confidence: "deterministic",
-  }));
+  return candidates.map((c) => {
+    const protocol = c.protocol || "Stratus";
+    const where = protocol === "Stratus" ? "the Stratus pool" : `${protocol} (external, real testnet deployment)`;
+    return {
+      target: c.target,
+      protocol,
+      externalUrl: c.externalUrl,
+      symbol: c.symbol,
+      displayName: c.displayName,
+      rate: c.target === "supply" ? c.apyPct : c.stratPerTokenPerYear,
+      reasoning:
+        c.target === "supply"
+          ? `Supplying ${c.displayName} on ${where} currently earns ${c.apyPct.toFixed(2)}% APY.`
+          : `Staking ${c.displayName} currently emits ~${c.stratPerTokenPerYear.toFixed(4)} STRAT per token per year.`,
+      confidence: "deterministic",
+    };
+  });
 }
 
 module.exports = { rankCandidates, toPicks };

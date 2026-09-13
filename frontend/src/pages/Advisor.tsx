@@ -17,13 +17,16 @@ const RISK_OPTIONS: { value: RiskPreference; label: string }[] = [
   { value: "aggressive", label: "Aggressive" },
 ];
 
-/** AI advisor — recommends across the two yield surfaces that actually
- * exist in Stratus (lending-pool supply, StratusStaking) and nothing
- * else; "across protocols" is scoped to what's real, no external DeFi
- * integrations exist. Advisor only, never an agent: it ranks and
- * explains, the user always clicks through and executes manually. Free
- * tier is a deterministic, zero-network scorer; premium tier pays 1
- * USDC via x402 for a DeepSeek-reasoned pick — see docs/phase-6-ai-advisor.md. */
+/** AI advisor — recommends across Stratus's own yield surfaces (lending
+ * supply, StratusStaking) AND Bonzo Finance's real testnet deployment
+ * (a genuinely different, independently-deployed lending protocol,
+ * read-only) — a real cross-protocol comparison, not just internal
+ * allocation. Advisor only, never an agent: it ranks and explains, the
+ * user always clicks through and executes manually — Bonzo picks link
+ * to Bonzo's own testnet app, never something Stratus executes on the
+ * user's behalf. Free tier is a deterministic, zero-network scorer;
+ * premium tier pays 1 USDC via x402 for a DeepSeek-reasoned pick — see
+ * docs/phase-6-ai-advisor.md. */
 export function Advisor() {
   const { signer, address, connect } = useWallet();
   const [risk, setRisk] = useState<RiskPreference>("balanced");
@@ -69,7 +72,7 @@ export function Advisor() {
     <div>
       <PageHeader
         title="Advisor"
-        subtitle="Recommends where to put idle assets across the two real yield surfaces in Stratus — lending-pool supply and staking. It only ranks and explains; you always execute the move yourself."
+        subtitle="Recommends where to put idle assets — across Stratus's own supply/staking and Bonzo Finance's real testnet lending rates. It only ranks and explains; you always execute the move yourself."
       />
 
       <div className="card mb-5 p-5">
@@ -118,10 +121,12 @@ export function Advisor() {
         <div className="grid gap-4 sm:grid-cols-2">
           {free.map((c) => (
             <RecommendationCard
-              key={`${c.target}-${c.symbol}`}
+              key={`${c.target}-${c.target === "supply" ? c.protocol : ""}-${c.symbol}`}
               symbol={c.symbol}
               displayName={c.displayName}
               target={c.target}
+              protocol={c.target === "supply" ? c.protocol : "Stratus"}
+              externalUrl={c.target === "supply" ? c.externalUrl : undefined}
               reasoning={reasoningFor(c)}
               confidence="deterministic"
             />
@@ -140,10 +145,12 @@ export function Advisor() {
           <div className="grid gap-4 sm:grid-cols-2">
             {premium.map((p) => (
               <RecommendationCard
-                key={`${p.target}-${p.symbol}`}
+                key={`${p.target}-${p.protocol}-${p.symbol}`}
                 symbol={p.symbol}
                 displayName={p.displayName}
                 target={p.target}
+                protocol={p.protocol}
+                externalUrl={p.externalUrl}
                 reasoning={p.reasoning}
                 confidence={p.confidence}
               />
@@ -159,12 +166,16 @@ function RecommendationCard({
   symbol,
   displayName,
   target,
+  protocol,
+  externalUrl,
   reasoning,
   confidence,
 }: {
   symbol: string;
   displayName: string;
   target: "supply" | "stake";
+  protocol: string;
+  externalUrl?: string;
   reasoning: string;
   confidence: string;
 }) {
@@ -175,17 +186,28 @@ function RecommendationCard({
         <div>
           <div className="text-sm font-semibold text-slate-900">{displayName}</div>
           <div className="text-xs uppercase tracking-wide text-slate-400">
-            {target === "supply" ? "Supply to pool" : "Stake for STRAT"} · {confidence}
+            {target === "supply" ? `Supply · ${protocol}` : "Stake for STRAT"} · {confidence}
           </div>
         </div>
       </div>
       <p className="mb-3 text-sm text-slate-600">{reasoning}</p>
-      <Link
-        to={target === "supply" ? "/stocks" : "/stake"}
-        className="text-sm font-medium text-indigo-600 hover:underline"
-      >
-        {target === "supply" ? "Go to Markets →" : "Go to Stake →"}
-      </Link>
+      {externalUrl ? (
+        <a
+          href={externalUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-sm font-medium text-indigo-600 hover:underline"
+        >
+          Go to {protocol} ↗
+        </a>
+      ) : (
+        <Link
+          to={target === "supply" ? "/stocks" : "/stake"}
+          className="text-sm font-medium text-indigo-600 hover:underline"
+        >
+          {target === "supply" ? "Go to Markets →" : "Go to Stake →"}
+        </Link>
+      )}
     </div>
   );
 }

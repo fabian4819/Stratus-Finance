@@ -24,6 +24,8 @@ interface X402Challenge {
 
 export interface PremiumPick {
   target: "supply" | "stake";
+  protocol: string;
+  externalUrl?: string;
   symbol: string;
   displayName: string;
   rate: number;
