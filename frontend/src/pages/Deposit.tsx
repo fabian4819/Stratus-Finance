@@ -79,7 +79,12 @@ export function Deposit() {
       setStatus("Approving vault…");
       await (await basket.approve(vaultAddress, basketAmount)).wait();
       setStatus("Depositing (decomposing into isolated reserves)…");
-      const tx = await vault.depositBasket(basketAmount);
+      // ethers' automatic estimateGas under-reports this call on Hedera —
+      // redeem() + two pool.deposit() calls ran out of gas at exactly
+      // 1,319,677 (the auto-estimated limit) in real on-chain testing,
+      // twice, with identical gasUsed both times. Same fix pattern as
+      // Stake.tsx's STAKING_GAS_LIMIT: an explicit, generous override.
+      const tx = await vault.depositBasket(basketAmount, { gasLimit: 3_500_000 });
       await tx.wait();
       setStatus(`Deposited ${amount} sETF. Tx ${tx.hash.slice(0, 10)}…`);
       await refresh();
