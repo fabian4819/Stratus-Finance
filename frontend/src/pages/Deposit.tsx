@@ -44,13 +44,11 @@ export function Deposit() {
 
   const refresh = useCallback(async () => {
     if (!signer || !address) return;
-    const basket = getBasketToken(signer);
-    // getUserRisk consistently fails through MetaMask's injected
-    // provider (verified live, see RiskPanel.tsx) — always read it via
-    // readProvider instead, since it takes `address` as a plain
-    // parameter and doesn't need the wallet's own provider.
+    // Read-only calls are unreliable through MetaMask's injected
+    // provider on Hedera (verified live) — always use readProvider.
+    const basket = getBasketToken(readProvider);
     const riskView = getRiskView(readProvider);
-    const dataProvider = getDataProvider(signer);
+    const dataProvider = getDataProvider(readProvider);
 
     const [balance, userRisk, goldConfig, stockConfig] = await Promise.all([
       basket.balanceOf(address),

@@ -51,13 +51,13 @@ export function BorrowRepay() {
 
   const refresh = useCallback(async () => {
     if (!signer || !address) return;
-    const pool = getPool(signer);
-    // getUserRisk consistently fails through MetaMask's injected
-    // provider (verified live, see RiskPanel.tsx) — always read it via
-    // readProvider instead, since it takes `address` as a plain
-    // parameter and doesn't need the wallet's own provider.
+    // Read-only calls consistently fail through MetaMask's injected
+    // provider on Hedera (verified live against pool.getUserAccountData
+    // and riskView.getUserRisk both) — none of these need signing, so
+    // read them all via readProvider, a direct RPC connection.
+    const pool = getPool(readProvider);
     const riskView = getRiskView(readProvider);
-    const oracle = getOracle(signer);
+    const oracle = getOracle(readProvider);
 
     const [data, risk] = await Promise.all([
       pool.getUserAccountData(address),
@@ -65,7 +65,7 @@ export function BorrowRepay() {
     ]);
 
     if (repayAsset) {
-      const token = getErc20(repayAsset.tokenAddress, signer);
+      const token = getErc20(repayAsset.tokenAddress, readProvider);
       setSelectedBalance(await token.balanceOf(address));
     }
 
@@ -91,7 +91,7 @@ export function BorrowRepay() {
       individualStocks
         .filter((s) => s.symbol !== "GOLD-x" && s.symbol !== "STOCK-x")
         .map(async (s) => {
-        const aToken = getErc20(s.aTokenAddress, signer);
+        const aToken = getErc20(s.aTokenAddress, readProvider);
         const [balance, price]: [bigint, bigint] = await Promise.all([
           aToken.balanceOf(address),
           oracle.getAssetPrice(s.tokenAddress),

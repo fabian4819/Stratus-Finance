@@ -35,7 +35,9 @@ export function RiskPanel() {
   const [risk, setRisk] = useState<{ components: ComponentRisk[]; combinedHealthFactor: bigint } | null>(null);
 
   const refresh = useCallback(async () => {
-    const oracle = getOracle(signer ?? readProvider);
+    // Read-only calls are unreliable through MetaMask's injected
+    // provider on Hedera (verified live) — always use readProvider.
+    const oracle = getOracle(readProvider);
 
     const [goldStressed, stockStressed] = await Promise.all([
       oracle.isDemoStressed(addresses.goldToken),
