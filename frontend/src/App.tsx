@@ -8,8 +8,6 @@ import { Deposit } from "./pages/Deposit";
 import { BorrowRepay } from "./pages/BorrowRepay";
 import { RiskPanel } from "./pages/RiskPanel";
 import { IndividualStocks } from "./pages/IndividualStocks";
-import { Stake } from "./pages/Stake";
-import { Advisor } from "./pages/Advisor";
 
 const NAV_ITEMS = [
   { to: "/faucet", label: "Faucet" },
@@ -17,8 +15,6 @@ const NAV_ITEMS = [
   { to: "/mint", label: "Mint Basket" },
   { to: "/deposit", label: "Deposit" },
   { to: "/borrow", label: "Borrow" },
-  { to: "/stake", label: "Stake" },
-  { to: "/advisor", label: "Advisor" },
   { to: "/risk", label: "Portfolio" },
   { to: "/stocks", label: "Markets" },
 ];
@@ -88,8 +84,6 @@ export default function App() {
             <Route path="/mint" element={<MintBasket />} />
             <Route path="/deposit" element={<Deposit />} />
             <Route path="/borrow" element={<BorrowRepay />} />
-            <Route path="/stake" element={<Stake />} />
-            <Route path="/advisor" element={<Advisor />} />
             <Route path="/risk" element={<RiskPanel />} />
             <Route path="/stocks" element={<IndividualStocks />} />
           </Routes>
