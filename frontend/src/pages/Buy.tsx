@@ -72,7 +72,13 @@ export function Buy() {
       const tx = await marketplace.buy(selected.tokenAddress, tokenAmount);
       await tx.wait();
       setStatus(`Bought ${amount} ${selected.displayName}. Tx ${tx.hash.slice(0, 10)}…`);
-      await refreshBalance();
+      // A refresh failure here must never overwrite the success message
+      // above for a purchase that already landed on-chain — see Deposit.tsx.
+      try {
+        await refreshBalance();
+      } catch (refreshErr) {
+        console.error("Post-buy refresh failed:", refreshErr);
+      }
     } catch (e) {
       setStatus(e instanceof Error ? e.message : "Buy failed");
     } finally {

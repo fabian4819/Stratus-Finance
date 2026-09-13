@@ -69,7 +69,13 @@ export function MintBasket() {
       const tx = await basket.mint(basketAmount);
       await tx.wait();
       setStatus(`Minted ${amount} sETF. Tx ${tx.hash.slice(0, 10)}…`);
-      await refreshBalances();
+      // A refresh failure here must never overwrite the success message
+      // above for a mint that already landed on-chain — see Deposit.tsx.
+      try {
+        await refreshBalances();
+      } catch (refreshErr) {
+        console.error("Post-mint refresh failed:", refreshErr);
+      }
     } catch (e) {
       setStatus(e instanceof Error ? e.message : "Mint failed");
     } finally {

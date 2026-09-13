@@ -117,7 +117,13 @@ export function BorrowRepay() {
       );
       await tx.wait();
       setStatus(`Borrowed ${borrowAmount} ${borrowAsset.symbol}. Tx ${tx.hash.slice(0, 10)}…`);
-      await refresh();
+      // A refresh failure here must never overwrite the success message
+      // above for a borrow that already landed on-chain — see Deposit.tsx.
+      try {
+        await refresh();
+      } catch (refreshErr) {
+        console.error("Post-borrow refresh failed:", refreshErr);
+      }
     } catch (e) {
       setStatus(e instanceof Error ? e.message : "Borrow failed");
     } finally {
@@ -141,7 +147,13 @@ export function BorrowRepay() {
       const tx = await pool.repay(repayAsset.tokenAddress, amount, VARIABLE_RATE_MODE, address);
       await tx.wait();
       setStatus(`Repaid ${repayAmount} ${repayAsset.symbol}. Tx ${tx.hash.slice(0, 10)}…`);
-      await refresh();
+      // A refresh failure here must never overwrite the success message
+      // above for a repay that already landed on-chain — see Deposit.tsx.
+      try {
+        await refresh();
+      } catch (refreshErr) {
+        console.error("Post-repay refresh failed:", refreshErr);
+      }
     } catch (e) {
       setStatus(e instanceof Error ? e.message : "Repay failed");
     } finally {
