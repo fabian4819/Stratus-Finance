@@ -10,6 +10,8 @@ import {
   NotConfiguredNotice,
   StatusLine,
   HealthFactor,
+  HeroStat,
+  healthFactorParts,
 } from "../components/ui";
 
 interface ReserveConfig {
@@ -132,13 +134,10 @@ export function Deposit() {
           </div>
 
           <div className="space-y-5">
-            <div className="card flex items-center justify-between p-5">
-              <div>
-                <div className="stat-label">Combined health factor</div>
-                <div className="mt-0.5 text-xs text-slate-400">Real, enforced by the pool</div>
-              </div>
-              <HealthFactor hf={risk?.combinedHealthFactor} size="lg" />
-            </div>
+            <HeroStat
+              label="Combined health factor · real, enforced by the pool"
+              value={healthFactorParts(risk?.combinedHealthFactor).text}
+            />
 
             <div className="grid gap-5 sm:grid-cols-2">
               {legs.map((leg, i) => (

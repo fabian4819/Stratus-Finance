@@ -6,7 +6,7 @@ import { addresses, addressesConfigured } from "../lib/addresses";
 import { getOracle, getRiskView } from "../lib/contracts";
 import { readProvider } from "../lib/wallet";
 import { fetchLivePrices } from "../lib/liveRedstonePrice";
-import { PageHeader, TokenBadge, StatCard, NotConfiguredNotice, HealthFactor } from "../components/ui";
+import { PageHeader, TokenBadge, HeroStat, NotConfiguredNotice, HealthFactor, healthFactorParts } from "../components/ui";
 
 interface ComponentRisk {
   aTokenBalance: bigint;
@@ -107,21 +107,14 @@ export function RiskPanel() {
         </div>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard
-          label="Collateral value"
-          value={totalCollateral !== undefined ? price(totalCollateral) : "—"}
-          hint="Gold + S&P 500 Index legs"
-        />
-        <div className="card p-4">
-          <div className="stat-label">Combined health factor</div>
-          <div className="mt-1 text-xl">
-            <HealthFactor hf={risk?.combinedHealthFactor} />
-          </div>
-          <div className="mt-0.5 text-xs text-slate-400">Real, enforced by the pool</div>
-        </div>
-        <StatCard label="Status" value={statusWord} />
-      </div>
+      <HeroStat
+        label="Collateral value · Gold + S&P 500 Index legs"
+        value={totalCollateral !== undefined ? price(totalCollateral) : "—"}
+        sub={[
+          { label: "Health factor", value: healthFactorParts(risk?.combinedHealthFactor).text },
+          { label: "Status", value: statusWord },
+        ]}
+      />
 
       <div className="mt-5 grid gap-5 lg:grid-cols-2">
         <div className="card p-5">

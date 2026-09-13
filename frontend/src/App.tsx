@@ -1,4 +1,5 @@
-import { NavLink, Route, Routes } from "react-router-dom";
+import { NavLink, Route, Routes, useLocation } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
 import { WalletProvider } from "./lib/WalletContext";
 import { WalletConnectButton } from "./components/WalletConnectButton";
 import { Buy } from "./pages/Buy";
@@ -31,6 +32,56 @@ function Logo() {
   );
 }
 
+function isNavActive(pathname: string, to: string): boolean {
+  return pathname === to || (to === "/buy" && pathname === "/");
+}
+
+function DesktopNav() {
+  const { pathname } = useLocation();
+  return (
+    <nav className="hidden items-center gap-1 md:flex">
+      {NAV_ITEMS.map((item) => {
+        const active = isNavActive(pathname, item.to);
+        return (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            className={`relative rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+              active ? "text-indigo-700" : "text-slate-500 hover:text-slate-900"
+            }`}
+          >
+            {active && (
+              <motion.span
+                layoutId="nav-pill"
+                className="absolute inset-0 rounded-lg bg-indigo-50"
+                transition={{ type: "spring", stiffness: 500, damping: 35 }}
+              />
+            )}
+            <span className="relative">{item.label}</span>
+          </NavLink>
+        );
+      })}
+    </nav>
+  );
+}
+
+function PageTransition({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
+  return (
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={location.pathname}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -6 }}
+        transition={{ duration: 0.22, ease: "easeOut" }}
+      >
+        {children}
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
 export default function App() {
   return (
     <WalletProvider>
@@ -39,23 +90,7 @@ export default function App() {
           <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
             <div className="flex items-center gap-7">
               <Logo />
-              <nav className="hidden items-center gap-1 md:flex">
-                {NAV_ITEMS.map((item) => (
-                  <NavLink
-                    key={item.to}
-                    to={item.to}
-                    className={({ isActive }) =>
-                      `rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                        isActive
-                          ? "bg-indigo-50 text-indigo-700"
-                          : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
-                      }`
-                    }
-                  >
-                    {item.label}
-                  </NavLink>
-                ))}
-              </nav>
+              <DesktopNav />
             </div>
             <WalletConnectButton />
           </div>
@@ -77,16 +112,18 @@ export default function App() {
         </header>
 
         <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
-          <Routes>
-            <Route path="/" element={<Buy />} />
-            <Route path="/faucet" element={<Faucet />} />
-            <Route path="/buy" element={<Buy />} />
-            <Route path="/mint" element={<MintBasket />} />
-            <Route path="/deposit" element={<Deposit />} />
-            <Route path="/borrow" element={<BorrowRepay />} />
-            <Route path="/risk" element={<RiskPanel />} />
-            <Route path="/stocks" element={<IndividualStocks />} />
-          </Routes>
+          <PageTransition>
+            <Routes>
+              <Route path="/" element={<Buy />} />
+              <Route path="/faucet" element={<Faucet />} />
+              <Route path="/buy" element={<Buy />} />
+              <Route path="/mint" element={<MintBasket />} />
+              <Route path="/deposit" element={<Deposit />} />
+              <Route path="/borrow" element={<BorrowRepay />} />
+              <Route path="/risk" element={<RiskPanel />} />
+              <Route path="/stocks" element={<IndividualStocks />} />
+            </Routes>
+          </PageTransition>
         </main>
       </div>
     </WalletProvider>

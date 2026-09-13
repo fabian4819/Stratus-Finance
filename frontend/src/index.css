@@ -31,7 +31,27 @@
 @layer components {
   .card {
     @apply rounded-2xl border border-[var(--border)] bg-white
-           shadow-[0_1px_2px_rgba(15,23,42,0.04),0_1px_3px_rgba(15,23,42,0.06)];
+           shadow-[0_1px_2px_rgba(15,23,42,0.04),0_1px_3px_rgba(15,23,42,0.06)]
+           transition-shadow duration-200;
+  }
+  .card-hover {
+    @apply hover:shadow-[0_4px_16px_rgba(15,23,42,0.08),0_1px_3px_rgba(15,23,42,0.06)];
+  }
+
+  /* Gradient hero stat card — indigo brand gradient with soft decorative
+     blur circles, for the one or two headline numbers per page that
+     deserve more visual weight than a plain white StatCard. */
+  .hero-card {
+    @apply relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-700;
+  }
+  .hero-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom right, rgba(129, 140, 248, 0.25), transparent);
+  }
+  .hero-blur {
+    @apply pointer-events-none absolute rounded-full bg-indigo-300/20 blur-2xl;
   }
 
   .page-title {
@@ -80,14 +100,17 @@
 
   .btn {
     @apply inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold
-           transition disabled:cursor-not-allowed disabled:opacity-40;
+           transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-40;
   }
   .btn-primary {
-    @apply btn bg-indigo-600 text-white hover:bg-indigo-500 active:bg-indigo-700
-           disabled:hover:bg-indigo-600;
+    @apply btn bg-indigo-600 text-white shadow-[0_1px_2px_rgba(79,70,229,0.3)]
+           hover:bg-indigo-500 hover:shadow-[0_4px_12px_rgba(79,70,229,0.35)] hover:-translate-y-px
+           active:translate-y-0 active:bg-indigo-700
+           disabled:hover:translate-y-0 disabled:hover:bg-indigo-600 disabled:hover:shadow-none;
   }
   .btn-secondary {
-    @apply btn border border-[var(--border)] bg-white text-slate-800 hover:bg-slate-50;
+    @apply btn border border-[var(--border)] bg-white text-slate-800
+           hover:border-slate-300 hover:bg-slate-50 active:bg-slate-100;
   }
 
   .badge {

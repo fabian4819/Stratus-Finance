@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { formatEther, MaxUint256 } from "ethers";
+import { motion } from "framer-motion";
 import { assetLogo } from "../lib/assetLogos";
 
 /** Shared presentational bits used across the pages — no chain logic, no state. */
@@ -62,6 +63,45 @@ export function PageHeader({ title, subtitle }: { title: string; subtitle?: Reac
   );
 }
 
+/** Gradient hero stat — the one headline number a page is really about
+ * (e.g. Portfolio's collateral value), styled with more visual weight
+ * than a plain white StatCard. `sub` is a row of small secondary
+ * figures under the headline. */
+export function HeroStat({
+  label,
+  value,
+  sub,
+}: {
+  label: string;
+  value: ReactNode;
+  sub?: { label: string; value: ReactNode }[];
+}) {
+  return (
+    <div className="hero-card">
+      <div className="hero-blur -right-10 -top-10 h-40 w-40" />
+      <div className="hero-blur -bottom-12 left-10 h-28 w-28" />
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
+        className="relative z-10 px-6 py-7 sm:px-8 sm:py-9"
+      >
+        <div className="text-xs font-medium text-indigo-100">{label}</div>
+        <div className="mt-1.5 text-4xl font-bold tabular-nums text-white sm:text-[42px]">{value}</div>
+        {sub && sub.length > 0 && (
+          <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-indigo-100/85">
+            {sub.map((s) => (
+              <span key={s.label}>
+                {s.label} <span className="font-medium text-white">{s.value}</span>
+              </span>
+            ))}
+          </div>
+        )}
+      </motion.div>
+    </div>
+  );
+}
+
 export function StatCard({
   label,
   value,
@@ -76,7 +116,7 @@ export function StatCard({
   const toneCls =
     tone === "positive" ? "text-emerald-600" : tone === "negative" ? "text-rose-600" : "text-slate-900";
   return (
-    <div className="card p-4">
+    <div className="card card-hover p-4">
       <div className="stat-label">{label}</div>
       <div className={`mt-1 text-xl font-semibold tabular-nums ${toneCls}`}>{value}</div>
       {hint && <div className="mt-0.5 text-xs text-slate-400">{hint}</div>}
