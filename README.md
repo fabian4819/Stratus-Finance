@@ -146,6 +146,12 @@ Full phase-by-phase build log, every architectural decision, and every blocker e
 
 ---
 
+## Not part of this submission
+
+The live app's nav also has **Stake**, **Advisor**, and (from Advisor) live rate comparisons against **Bonzo Finance** and **Cirrus Finance** (a second lending market this same project also deployed). These are real, working, and disclosed as such in `docs/phase-6-ai-advisor.md` — but they're generic DeFi features (a reward-token staking pool, a deterministic + optional-LLM yield ranker, an x402 payment-gated premium tier) with no connection to Hedera tokenization or basket-collateral lending, and no separate prize track at this event covers them either. They exist because this repo kept growing after the Hedera-track submission was already feature-complete, not because they're part of what's being submitted here. **The actual submission is §1–§9 above** — the basket mint → deposit/decompose → borrow → isolated liquidation flow. Treat everything past this line as an unscored exploration, not a second pitch competing for the same judges' attention.
+
+---
+
 ## Repository layout
 
 ```
