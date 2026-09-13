@@ -17,23 +17,6 @@ export const ERC20_ABI = [
 /** MockUSDC and MockCrypto both expose an open `mint` for testnet faucet use. */
 export const MINTABLE_ERC20_ABI = [...ERC20_ABI, "function mint(address to, uint256 amount)"];
 
-export const STRATUS_BASKET_TOKEN_ABI = [
-  ...ERC20_ABI,
-  "function previewComponents(uint256 basketAmount) view returns (uint256 amountA, uint256 amountB)",
-  "function mint(uint256 basketAmount) returns (uint256 amountA, uint256 amountB)",
-  "function redeem(uint256 basketAmount) returns (uint256 amountA, uint256 amountB)",
-  "function componentA() view returns (address)",
-  "function componentB() view returns (address)",
-  "function ratioABps() view returns (uint256)",
-];
-
-export const STRATUS_VAULT_ABI = [
-  "function depositBasket(uint256 basketAmount)",
-  "function recomposeBasket(uint256 basketAmount)",
-  "event BasketDecomposed(address indexed user, uint256 basketAmount, uint256 amountA, uint256 amountB)",
-  "event BasketRecomposed(address indexed user, uint256 basketAmount, uint256 amountA, uint256 amountB)",
-];
-
 export const LENDING_POOL_ABI = [
   "function deposit(address asset, uint256 amount, address onBehalfOf, uint16 referralCode)",
   "function withdraw(address asset, uint256 amount, address to) returns (uint256)",
@@ -64,4 +47,15 @@ export const MARKETPLACE_ABI = [
   "function quote(address token, uint256 tokenAmount) view returns (uint256 usdcCost)",
   "function buy(address token, uint256 tokenAmount)",
   "function sellable(address token) view returns (bool)",
+];
+
+export const STAKING_ABI = [
+  "function poolLength() view returns (uint256)",
+  "function pools(uint256) view returns (address token, uint256 rewardPerSecond, uint256 totalStaked, uint256 accRewardPerShare, uint256 lastRewardTime)",
+  "function userInfo(uint256, address) view returns (uint256 amount, uint256 rewardDebt)",
+  "function pendingReward(uint256 poolId, address user) view returns (uint256)",
+  "function stake(uint256 poolId, uint256 amount)",
+  "function unstake(uint256 poolId, uint256 amount)",
+  "function claim(uint256 poolId)",
+  "function rewardToken() view returns (address)",
 ];

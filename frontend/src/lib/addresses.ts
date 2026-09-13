@@ -28,6 +28,11 @@ export const addresses = {
   aTokenStock: importEnv("VITE_ATOKEN_STOCK"),
   // Self-serve "buy tokenized assets with USDC" — see StratusMarketplace.sol
   stratusMarketplace: importEnv("VITE_STRATUS_MARKETPLACE"),
+  // Stake any borrowable crypto reserve for STRAT rewards, independent of
+  // the lending pool — see StratusStaking.sol. Optional feature: not in
+  // REQUIRED_KEYS, Stake.tsx self-guards like Buy.tsx does for the marketplace.
+  stratusStaking: importEnv("VITE_STRATUS_STAKING"),
+  stratusRewardToken: importEnv("VITE_STRATUS_REWARD_TOKEN"),
 };
 
 function importEnv(key: string): string {

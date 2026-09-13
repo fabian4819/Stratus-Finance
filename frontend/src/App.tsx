@@ -6,11 +6,13 @@ import { Faucet } from "./pages/Faucet";
 import { BorrowRepay } from "./pages/BorrowRepay";
 import { RiskPanel } from "./pages/RiskPanel";
 import { IndividualStocks } from "./pages/IndividualStocks";
+import { Stake } from "./pages/Stake";
 
 const NAV_ITEMS = [
   { to: "/faucet", label: "Faucet" },
   { to: "/buy", label: "Buy" },
   { to: "/borrow", label: "Borrow" },
+  { to: "/stake", label: "Stake" },
   { to: "/risk", label: "Portfolio" },
   { to: "/stocks", label: "Markets" },
 ];
@@ -78,6 +80,7 @@ export default function App() {
             <Route path="/faucet" element={<Faucet />} />
             <Route path="/buy" element={<Buy />} />
             <Route path="/borrow" element={<BorrowRepay />} />
+            <Route path="/stake" element={<Stake />} />
             <Route path="/risk" element={<RiskPanel />} />
             <Route path="/stocks" element={<IndividualStocks />} />
           </Routes>

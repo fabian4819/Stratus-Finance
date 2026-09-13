@@ -8,6 +8,7 @@ import {
   RISK_VIEW_ABI,
   ORACLE_ABI,
   MARKETPLACE_ABI,
+  STAKING_ABI,
 } from "./abis";
 
 export function getErc20(address: string, runner: ContractRunner) {
@@ -46,4 +47,10 @@ export function getUsdc(runner: ContractRunner) {
 /** Self-serve "buy tokenized assets with USDC" — see StratusMarketplace.sol. */
 export function getMarketplace(runner: ContractRunner) {
   return new Contract(addresses.stratusMarketplace, MARKETPLACE_ABI, runner);
+}
+
+/** Stake any borrowable crypto reserve for STRAT rewards — independent
+ * of the lending pool. See StratusStaking.sol. */
+export function getStaking(runner: ContractRunner) {
+  return new Contract(addresses.stratusStaking, STAKING_ABI, runner);
 }
