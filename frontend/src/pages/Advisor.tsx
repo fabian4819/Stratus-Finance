@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Contract, parseUnits, type JsonRpcSigner } from "ethers";
+import { useState, useEffect } from "react";
+import { Contract, parseUnits, formatUnits, type JsonRpcSigner } from "ethers";
 import { Link } from "react-router-dom";
 import { useWallet } from "../lib/WalletContext";
 import { getErc20 } from "../lib/contracts";
@@ -299,6 +299,25 @@ function ExternalSupplyAction({
   const [amount, setAmount] = useState("1");
   const [status, setStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [balance, setBalance] = useState<bigint | null>(null);
+
+  useEffect(() => {
+    if (!signer || !address) return;
+    let cancelled = false;
+    getErc20(tokenAddress, signer)
+      .balanceOf(address)
+      .then((b: bigint) => {
+        if (!cancelled) setBalance(b);
+      })
+      .catch(() => {
+        if (!cancelled) setBalance(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [signer, address, tokenAddress]);
+
+  const hasBalance = balance !== null && balance > 0n;
 
   async function handleSupply() {
     if (!signer || !address) return;
@@ -335,6 +354,12 @@ function ExternalSupplyAction({
 
   return (
     <div>
+      <div className="mb-1.5 flex items-center justify-between text-xs">
+        <span className="text-slate-500">Your {symbol} balance</span>
+        <span className={`tabular-nums font-medium ${hasBalance ? "text-slate-900" : "text-rose-600"}`}>
+          {balance !== null ? Number(formatUnits(balance, decimals)).toFixed(4) : "…"}
+        </span>
+      </div>
       <div className="mb-2 flex gap-2">
         <input
           type="number"
@@ -343,10 +368,19 @@ function ExternalSupplyAction({
           onChange={(e) => setAmount(e.target.value)}
           className="input text-sm"
         />
-        <button onClick={handleSupply} disabled={busy || !amount} className="btn-primary whitespace-nowrap text-sm">
+        <button
+          onClick={handleSupply}
+          disabled={busy || !amount || !hasBalance}
+          className="btn-primary whitespace-nowrap text-sm"
+        >
           {busy ? "Working…" : `Supply on ${protocol}`}
         </button>
       </div>
+      {!hasBalance && balance !== null && (
+        <p className="mb-2 text-[11px] font-medium text-rose-600">
+          You don't hold any {symbol} on {protocol} yet — get some there first, Stratus can't provide it.
+        </p>
+      )}
       <p className="text-[11px] text-slate-400">
         Requires your own {symbol} on {protocol}'s testnet — not a Stratus token. First supply prompts 3
         signatures (associate, approve, deposit) — Hedera requires associating with any new token once.{" "}
