@@ -47,9 +47,11 @@ export function Deposit() {
     const riskView = getRiskView(signer);
     const dataProvider = getDataProvider(signer);
 
+    // getUserRisk's eth_call sometimes gets truncated by MetaMask's own
+    // gas cap — verified live, see RiskPanel.tsx. Explicit override.
     const [balance, userRisk, goldConfig, stockConfig] = await Promise.all([
       basket.balanceOf(address),
-      riskView.getUserRisk(address, addresses.goldToken, addresses.stockIndexToken),
+      riskView.getUserRisk(address, addresses.goldToken, addresses.stockIndexToken, { gasLimit: 5_000_000 }),
       dataProvider.getReserveConfigurationData(addresses.goldToken),
       dataProvider.getReserveConfigurationData(addresses.stockIndexToken),
     ]);

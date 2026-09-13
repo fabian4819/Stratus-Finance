@@ -69,7 +69,15 @@ export function RiskPanel() {
 
     if (address) {
       const riskView = getRiskView(signer ?? readProvider);
-      const userRisk = await riskView.getUserRisk(address, addresses.goldToken, addresses.stockIndexToken);
+      // getUserRisk does enough internal work (2 reserves' worth of
+      // balance/oracle reads plus health-factor math) that MetaMask's
+      // own eth_call gas cap sometimes truncates it — verified live,
+      // fails consistently through the wallet's provider while the
+      // identical call succeeds via a direct RPC connection. An
+      // explicit gasLimit override bypasses MetaMask's cap.
+      const userRisk = await riskView.getUserRisk(address, addresses.goldToken, addresses.stockIndexToken, {
+        gasLimit: 5_000_000,
+      });
       setRisk({ components: userRisk.components, combinedHealthFactor: userRisk.combinedHealthFactor });
     }
   }, [signer, address]);

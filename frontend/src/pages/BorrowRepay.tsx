@@ -54,9 +54,11 @@ export function BorrowRepay() {
     const riskView = getRiskView(signer);
     const oracle = getOracle(signer);
 
+    // getUserRisk's eth_call sometimes gets truncated by MetaMask's own
+    // gas cap — verified live, see RiskPanel.tsx. Explicit override.
     const [data, risk] = await Promise.all([
       pool.getUserAccountData(address),
-      riskView.getUserRisk(address, addresses.goldToken, addresses.stockIndexToken),
+      riskView.getUserRisk(address, addresses.goldToken, addresses.stockIndexToken, { gasLimit: 5_000_000 }),
     ]);
 
     if (repayAsset) {
