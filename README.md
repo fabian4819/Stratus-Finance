@@ -1,118 +1,234 @@
-# Stratus Finance
+<h1 align="center">Stratus Finance</h1>
 
-**RWA Basket Collateral Lending Protocol on Hedera**
+<p align="center">
+  RWA basket collateral, without the basket risk — isolated per-asset lending on Hedera.
+</p>
 
-Target event: ETHGlobal ETHOnline 2026
-Target sponsor track: Hedera — Tokenization of Anything ($6,000, up to 3 teams @ $2,000)
-
-**Status: built and verified on Hedera testnet.** Every mechanism described
-below — decomposition, isolated deposit/borrow/repay, and isolated
-liquidation (both directions) — has been run for real on-chain, not just
-unit-tested. See [§9 Live Deployment](#9-live-deployment--verified-results)
-for every contract address and transaction hash.
+<p align="center">
+  <strong>ETHGlobal ETHOnline 2026 · Hedera — Tokenization of Anything ($6,000, up to 3 teams @ $2,000)</strong>
+</p>
 
 ---
 
-## 1. Problem Statement
+Stratus Finance lets a wallet deposit a diversified RWA basket — tokenized gold plus a tokenized S&P 500 index, wrapped as one ERC-20 — and borrow against it without selling. Depositing decomposes the basket **on-chain, at the point of deposit**, into two separate, isolated lending reserves, each with its own risk parameters. A price crash in one leg can never force-liquidate the other.
 
-RWA (Real World Asset) basket-style tokens — portfolios that combine multiple asset classes such as tokenized stocks, gold, and bonds into a single ETF-like token — cannot currently be used as collateral in any lending market.
+> **Deposit the basket. Get two isolated positions. Never liquidate the whole thing for one leg's mistake.**
+>
+> - **Gold crashes 90%?** `liquidationCall()` touches the gold reserve only. The S&P 500 leg keeps backing the loan, untouched — proven on-chain, both directions: `0.3` → `0.3` and `800.0` → `800.0`.
+> - **Everything else** (mint, deposit/decompose, borrow, repay) runs on a real, unmodified Aave v2 pool and real Hedera Asset Tokenization Studio tokens — not simulated, not mocked pricing.
 
-This is not simply a missing feature. Industry research confirms it is a deliberate limitation: established lending protocols (e.g. Morpho) only accept single-asset RWA tokens as collateral, never diversified baskets. The reason is technical: a combined basket is difficult to price reliably in real time and difficult to liquidate safely, since a price move in one component (e.g. gold) shouldn't force liquidation of the entire basket, including components that haven't moved (e.g. stocks).
+**Status: built and verified on Hedera testnet.** Every mechanism described below has been run for real on-chain, not just unit-tested. See [Live Deployment & Verified Results](#smart-contract-details) for every address and transaction hash.
 
-The industry-standard mitigation for this class of problem is **isolation mode** — treating each underlying asset as a separate collateral reserve with its own risk parameters, rather than pricing and liquidating a basket as one unit.
+---
 
-**Stratus Finance implements this isolation-mode approach for RWA baskets on Hedera**, allowing basket holders to borrow against their portfolio without needing to sell it, while keeping each underlying asset's risk fully isolated from the others.
+## What Makes Stratus Special
 
-## 2. Why This Direction (Research Validation)
+### Who This Is For
 
-This idea was arrived at through a structured "observe → imitate → modify" process applied to previous Hedera hackathon winners, cross-checked against the broader ETHGlobal ecosystem and DeFi industry research to avoid duplicating existing solutions:
+Meet Sarah. She built a diversified RWA position on Hedera: half tokenized gold, half a tokenized S&P 500 index, bought straight through Stratus's marketplace. It's a real hedge — gold and equities rarely crash together. Then rent's due, and she doesn't want to sell either leg. She just needs some USDC for a month.
 
-- **All Weather Finance** (ETHGlobal New Delhi, Hedera 2nd place) built an auto-rebalancing RWA basket (S&P stocks + gold + bonds) on Hedera using Pyth price feeds and HTS. Its token is static — it can be held, but not used productively elsewhere in DeFi.
-- Reframing this gap as "add lending support" was checked against real-world lending protocol design (Morpho, Aave-based systems) and confirmed to be a genuine, unsolved technical problem — not a trivial feature omission.
-- Adjacent ideas explored and ruled out during research: agent-to-agent data marketplaces, sentiment-signal trading with liquidity checks, and idle-capital-to-yield advisors were all found to already exist as built projects elsewhere in the ETHGlobal ecosystem (e.g. CapyMate, an ETHGlobal OpenAgent Hackathon project combining sentiment signals with slippage/safety validation; an ETHGlobal showcase project described as "AI advisor that puts idle stablecoins to work at rates two sources agree on"). This basket-collateral direction does not overlap with any of those.
-- The direction also aligns with Hedera's own stated priority for this track: *"Institutional adoption is the dominant narrative in the market right now, and tokenised collateral is the sharpest edge of it,"* and its explicit example idea: *"Tokenised collateral for repo — post tokenised treasuries as collateral with programmatic proof and release."*
+She checks the usual lending markets. Aave-style protocols and Morpho all say the same thing: single-asset RWA collateral only. Her diversified position, wrapped as one ETF-style token, isn't accepted anywhere — not because it's worth less, but because no protocol wants to price and liquidate a basket as one blob. If gold crashes and stocks don't, a naive protocol would liquidate **both** legs to cover the shortfall on one.
 
-## 3. Core Mechanism: Look-Through Isolation
+Sarah's problem isn't that her collateral is bad. It's that no lending market on Hedera treats a basket's two legs as what they actually are: two separate risks that happen to share one wrapper token.
 
-Instead of listing the basket token itself as a single collateral asset (which reintroduces the basket-pricing/liquidation problem), Stratus Finance decomposes the basket at the point of deposit:
+*(Sarah is illustrative — a stand-in for the real, general problem below, not a claimed user.)*
 
-1. User deposits one basket token (an ETF-style token representing 50% tokenized gold-tracking asset, 50% tokenized stock-index-tracking asset) into the Stratus Vault contract.
-2. The Vault contract "looks through" the basket and allocates the underlying value proportionally into **separate, isolated lending reserves** — one per underlying asset type.
-3. Each reserve has its own independently calibrated risk parameters (loan-to-value ratio, liquidation threshold, liquidation bonus) based on that specific asset's volatility.
-4. The user can borrow stablecoins against the combined borrowing capacity of all their underlying positions.
-5. If one underlying asset's price drops and crosses its liquidation threshold, only that specific reserve is liquidated. Other components of the basket remain untouched and continue backing the loan normally.
-6. On withdrawal (assuming the position is healthy), the underlying components are proportionally recombined back into the basket token.
+### The Problem
 
-This mirrors the "isolation mode" pattern used in modern lending protocol design for correlated or hard-to-price collateral, applied specifically to a multi-asset RWA basket context — which, per research, has not yet been done for basket-style RWA tokens.
+- RWA basket tokens — portfolios that bundle multiple asset classes (stocks, gold, bonds) into one ETF-style token — cannot currently be used as collateral in any lending market.
+- This is a deliberate industry limitation, not an oversight: established protocols like Morpho explicitly accept only single-asset RWA collateral, never diversified baskets.
+- The reason is technical: a combined basket is hard to price reliably in real time, and hard to liquidate safely — a price move in one component shouldn't force-liquidate components that haven't moved.
+- The closest prior art, **All Weather Finance** (ETHGlobal New Delhi, Hedera 2nd place), built exactly this kind of basket on Hedera — but it's static. Holdable, never usable as collateral.
 
-**This isn't just the design — it's been proven.** In the Phase 4 liquidation demo (see §9), a position holding both legs had its GOLD-x leg crashed −90% and liquidated; the STOCK-x aToken balance was confirmed byte-for-byte unchanged before and after (`0.3` → `0.3`). The mirror case (STOCK-x crashed instead) confirmed the same in the other direction (`800.0` → `800.0` on the GOLD-x leg). Both runs are on real Hedera testnet, with recorded transaction hashes.
+### The Solution
 
-## 4. Architecture
+Stratus solves this with **look-through isolation**, decomposing the basket at the point of deposit instead of listing it as one collateral asset:
 
-```
-User holds "Stratus ETF" basket token (50% gold-tracking token, 50% stock-index-tracking token)
-                        │
-              Deposit into Stratus Vault contract
-                        │
-        Vault decomposes basket proportionally
-                        │
-        ┌───────────────┴───────────────┐
-        ▼                               ▼
-  Reserve: Gold-token                Reserve: Stock-index-token
-  (forked Bonzo/Aave v2 pool)        (forked Bonzo/Aave v2 pool)
-  Own LTV / liquidation params       Own LTV / liquidation params
-        │                               │
-        └───────────────┬───────────────┘
-                        ▼
-        User borrows stablecoin (USDC) against
-        combined borrowing capacity
-                        │
-        If gold price drops sharply:
-        liquidationCall() executes ONLY on the
-        gold reserve — stock-index reserve is
-        unaffected and continues backing the loan
-```
+**1. Look-Through Decomposition at Deposit** — `StratusVault.depositBasket()` pulls the basket token, redeems it back to its two underlying components, and deposits each one into its own isolated Aave v2 reserve, on the user's behalf. A real transfer, not an accounting fiction.
 
-## 5. Technology Stack
+**2. Independently-Calibrated Risk Per Leg** — Gold gets 70% LTV / 75% liquidation threshold / 5% bonus (low volatility, deep real-world liquidity). The S&P 500 leg gets 55% / 65% / 10% (higher volatility, equity drawdown risk). Different numbers, not the same risk wearing two labels.
+
+**3. Isolated Liquidation, Proven Both Directions** — If gold crashes, `liquidationCall()` executes only against the gold reserve. Verified for real on Hedera testnet: STOCK-x aToken balance `0.3` before a −90% gold crash, `0.3` after. Mirror case (stock crashes instead): GOLD-x balance `800.0` → `800.0`, unchanged.
+
+**4. Real Aave v2 Core, Not Reimplemented** — Forked `bonzo-finance-contracts` (Bonzo Finance's own open-source Aave v2 fork), deployed through the actual upgradeable-proxy flow. Health factor, interest accrual, and `liquidationCall` are audited upstream logic.
+
+**5. Real ATS Tokenization, Real Compliance Gating** — GOLD-x and STOCK-x are real Hedera Asset Tokenization Studio Equity diamonds (ERC-1400-style, control-list gated), not placeholder ERC-20s. Every protocol contract that touches them — the pool, the vault, both aTokens, the demo liquidator — is explicitly whitelisted.
+
+**6. Real Prices, No Substitutes** — RedStone's real, signed pull-oracle feeds: GOLD-x tracks the actual gold spot price (`XAU`), STOCK-x tracks the actual S&P 500 index level (`USA500.Y`). Getting here meant checking every oracle actually integrated with Hedera and finding Pyth blocked, Chainlink and Supra crypto-only — full trail in [`docs/phase-3-oracle-research.md`](./docs/phase-3-oracle-research.md).
+
+---
+
+## Risk Isolation, Side by Side
+
+The point of isolation only holds if the two legs are actually configured differently — not uniform numbers wearing two labels.
+
+| | Gold Leg | S&P 500 Index Leg |
+|---|---|---|
+| **LTV** | 70% | 55% |
+| **Liquidation threshold** | 75% | 65% |
+| **Liquidation bonus** | 5% | 10% |
+| **Rationale** | Low volatility, deep real-world liquidity | Higher volatility, equity drawdown risk |
+| **Verified liquidation-immunity** | `0.3` → `0.3` aToken balance after gold −90% crash | `800.0` → `800.0` aToken balance after stock −60% crash |
+
+---
+
+## Features
+
+- **Look-Through Basket Decomposition** — `depositBasket()` pulls the sETF, redeems it, and deposits each leg into its own isolated Aave v2 reserve, on-chain, not an accounting fiction.
+- **Isolated Liquidation, Proven On-Chain** — `liquidationCall()` targets one reserve; the untouched leg's aToken balance is byte-for-byte identical before and after, verified both directions.
+- **Real ATS Tokenization** — GOLD-x and STOCK-x are compliance-gated ATS Equity diamonds, issued directly via `@hashgraph/asset-tokenization-contracts`.
+- **Real Live Pricing** — RedStone signed feeds for gold spot and the S&P 500 index level, plus 10 individual real-stock reserves (Apple, Tesla, Microsoft, Nvidia, Alphabet, Amazon, Meta, Berkshire Hathaway, AMD, Palantir).
+- **Real Aave v2 Lending Core** — forked, unmodified `bonzo-finance-contracts`, deployed through the standard upgradeable-proxy flow.
+- **Self-Serve Marketplace** — `StratusMarketplace` lets any wallet buy tokenized Gold/S&P 500/stocks with USDC, auto-whitelisted on the ATS control list in the same transaction, no admin step.
+- **20 Crypto Borrow Reserves** — BTC, ETH, USDT, XRP, BNB, SOL, DOGE, ADA, TRX, AVAX, SHIB, LINK, DOT, BCH, TON, SUI, NEAR, LTC, ICP, UNI, all borrowable alongside USDC.
+- **Disclosed Demo-Stress Mechanism** — an owner-gated, event-logged price offset for demoing liquidation, always shown on-screen via a persistent banner, never a silent manipulation.
+- **Upstream ATS Contributions** — three real friction points filed against `hashgraph/asset-tokenization-studio`.
+
+---
+
+## Tech Stack
 
 | Layer | Technology | Role |
 |---|---|---|
-| RWA tokenization | Hedera Asset Tokenization Studio (ATS) | Real, compliant ERC-1400-style diamond tokens for GOLD-x and STOCK-x, issued directly via `@hashgraph/asset-tokenization-contracts` — see §6 |
-| Price feeds (live) | **RedStone** (real, signed pull-oracle feeds, verified on-chain via `PrimaryProdDataServiceConsumerBase`) | GOLD-x tracks real gold spot (`XAU`), STOCK-x tracks the real S&P 500 index (`USA500.Y`), plus 10 individual real-stock reserves (Apple, Tesla, Microsoft, Nvidia, Alphabet, Amazon, Meta, Berkshire Hathaway, AMD, Palantir) — not substitutes — see §6, [`docs/phase-3-oracle-research.md`](./docs/phase-3-oracle-research.md), and [`docs/phase-4-individual-stocks.md`](./docs/phase-4-individual-stocks.md) |
-| Price feeds (also live, alternate) | Chainlink (real, push-based feeds on Hedera testnet) | HBAR/USD and ETH/USD — kept in the codebase as a working alternate oracle, one `setPriceOracle` call away |
-| Price feeds (as designed) | Pyth Network | Originally designed oracle — fully implemented and unit-tested (`updatePriceFeeds`, staleness checks) but blocked by Pyth/Hedera infrastructure outside this repo's control; kept in the codebase — see [`docs/phase-2-findings.md`](./docs/phase-2-findings.md) |
-| Lending core + liquidation engine | Forked `bonzo-finance-contracts` (Aave v2 fork, open source) | Real, unmodified, deployed through the standard upgradeable-proxy flow — health factor, interest accrual, and `liquidationCall` are Aave v2's own audited logic, not reimplemented |
-| Basket wrapper (core original contribution) | `StratusBasketToken` + `StratusVault` (Solidity) | Decomposes/recomposes the basket token into individual isolated reserve positions |
-| Risk view (original contribution) | `StratusRiskView` (Solidity) | Per-component health-factor heuristic alongside the pool's real, enforced health factor |
-| Frontend | React, TypeScript, Tailwind, ethers v6 | Four screens wired to the live deployment — mint, deposit/decompose, borrow/repay, risk panel |
+| RWA tokenization | Hedera Asset Tokenization Studio (ATS) | Real, compliant ERC-1400-style diamond tokens for GOLD-x and STOCK-x |
+| Price feeds (live) | **RedStone** | GOLD-x tracks real gold spot (`XAU`), STOCK-x tracks the real S&P 500 index (`USA500.Y`), plus 10 individual real-stock reserves |
+| Price feeds (alternate, live) | Chainlink | Real, push-based feeds on Hedera testnet — kept as a working alternate, one `setPriceOracle` call away |
+| Price feeds (as designed) | Pyth Network | Fully implemented and unit-tested, blocked by Pyth/Hedera infrastructure outside this repo's control |
+| Lending core + liquidation engine | Forked `bonzo-finance-contracts` (Aave v2) | Real, unmodified, deployed through the standard upgradeable-proxy flow |
+| Basket wrapper (core original contribution) | `StratusBasketToken` + `StratusVault` | Decomposes/recomposes the basket token into isolated reserve positions |
+| Risk view (original contribution) | `StratusRiskView` | Per-component health-factor heuristic alongside the pool's real, enforced health factor |
+| Frontend | React, TypeScript, Tailwind, ethers v6 | Wired to the live deployment: mint, deposit/decompose, borrow/repay, portfolio |
 | Wallets | MetaMask (Hedera EVM) | Auto-switches/adds the Hedera testnet chain |
 
-## 6. Feasibility Notes
+---
 
-- **No mocked lending logic**: by forking Bonzo Finance (itself an open-source Aave v2 fork), the core lending, interest rate, and liquidation mechanics are real, deployed, and already audited upstream — not reimplemented or simulated. Deployed for real through the full upgradeable-proxy flow, not a shortcut.
-- **No mocked pricing, and no substitute assets either**: the pool is wired to RedStone's real, signed price feeds — GOLD-x tracks the actual gold spot price, STOCK-x tracks the actual S&P 500 index level, verified on-chain, not a stub. Getting here meant checking every oracle actually integrated with Hedera (Pyth, Chainlink, Supra) and finding all three lacked real-world-asset feeds on Hedera testnet specifically, before RedStone's differently-architected pull model (verification happens inside our own contract, no oracle-side Hedera deployment needed) closed the gap — full research trail, three real bugs found and fixed along the way, in [`docs/phase-3-oracle-research.md`](./docs/phase-3-oracle-research.md). Chainlink (real, live) and Pyth (real, blocked) both stay in the codebase as working/documented alternates — see [`docs/phase-2-findings.md`](./docs/phase-2-findings.md).
-- **No mocked tokenization**: GOLD-x and STOCK-x are real ATS-issued diamond contracts (not placeholder ERC20s), with real control-list compliance gating enforced and navigated (every protocol contract — the pool, the vault, both aTokens, the demo liquidator — is explicitly whitelisted; see [`docs/phase-0-findings.md`](./docs/phase-0-findings.md) and [`docs/phase-2-findings.md`](./docs/phase-2-findings.md) for the friction this surfaced).
-- **Liquidation is fully demonstrable on testnet without deep DEX liquidity**: Aave v2-style `liquidationCall()` is a self-contained contract operation — the liquidator receives seized collateral directly from the protocol; reselling that collateral externally is a separate, subsequent action outside the core mechanism being demonstrated. Run for real, both directions — see §9.
-- **Realistic scope for a hackathon build**: two underlying asset types in a simple fixed-ratio (50/50) basket, rather than a fully customizable multi-asset allocation system. Custom allocation ratios and additional asset types are noted as future work in [`PLAN.md`](./PLAN.md).
+## Hedera API Integration
 
-## 7. Bounty Alignment
-
-- **Primary target — Hedera: Tokenization of Anything.** Directly matches stated qualification requirements: use of Asset Tokenization Studio, testnet deployment, and a demonstrated lifecycle operation (borrowing against tokenized collateral, run for real — see §9).
-- **Upstream ATS contribution (bonus criterion):** three substantive, real friction points found integrating the ATS SDK, filed as issues against `hashgraph/asset-tokenization-studio` — [#1397](https://github.com/hashgraph/asset-tokenization-studio/issues/1397), [#1398](https://github.com/hashgraph/asset-tokenization-studio/issues/1398), [#1399](https://github.com/hashgraph/asset-tokenization-studio/issues/1399). Full writeup in [`docs/ats-friction.md`](./docs/ats-friction.md).
-- **Secondary target — Open Source: Improve the Hedera Harness.** A real rough edge hit building this project — a Pyth refund (`msg.value - fee`) silently rounding to zero because Hedera's 8-decimal tinybar ledger drops native-value amounts below 1e10 wei, including internal contract-to-contract forwards (see [`docs/phase-2-findings.md`](./docs/phase-2-findings.md) and `StratusPriceOracle._roundUpToTinybar`) — contributed back to `hedera-dev/hedera-harness` as a new Tier 0-1 deterministic check that flags the same pattern in agent-generated contracts, plus the gotcha documented directly in its generator/repair prompts: [PR #45](https://github.com/hedera-dev/hedera-harness/pull/45).
-- **Not chasing it, but worth noting honestly:** Chainlink is also a sponsor at this event, and this project ended up using their real, live Hedera testnet price feeds — not for bounty alignment (their specific prize tracks here are a Continuity-Track-only upgrade prize and a separate Sepolia mini-challenge, neither of which fits this submission), but because their infrastructure genuinely solved a real blocker (see [`docs/phase-2-findings.md`](./docs/phase-2-findings.md)). Mentioned for transparency, not claimed as a qualification.
-
-## 8. Differentiation Summary
-
-| Existing project | What it does | What Stratus Finance adds |
+| Component | File | Description |
 |---|---|---|
-| All Weather Finance | Auto-rebalancing RWA basket token (static, holdable only) | Makes the basket productive as collateral via isolated per-asset lending |
-| Bonzo Finance | General-purpose lending/borrowing for crypto-native and HTS assets | Extends the same audited infrastructure to support decomposed RWA basket collateral specifically |
-| Industry RWA lending (Morpho etc.) | Accepts only single-asset RWA tokens as collateral | Solves the basket-collateral problem those protocols explicitly avoid, using an isolation-mode approach |
+| **ATS Client** | [`tokenization/scripts/lib/ats-client.ts`](./tokenization/scripts/lib/ats-client.ts) | Direct calls to ATS diamond contracts (issue, mint, whitelist) — bypasses the official SDK's lack of headless/private-key signing support |
+| **Basket Decomposition** | [`contracts/src/StratusVault.sol`](./contracts/src/StratusVault.sol) | `depositBasket()` / `recomposeBasket()` — the core original contribution |
+| **Basket Wrapper** | [`contracts/src/StratusBasketToken.sol`](./contracts/src/StratusBasketToken.sol) | `mint()` / `redeem()` — fixed-ratio ERC-20 wrapper that actually holds the underlying |
+| **Per-Component Risk** | [`contracts/src/StratusRiskView.sol`](./contracts/src/StratusRiskView.sol) | `getUserRisk()` — per-leg health-factor heuristic alongside the pool's real, enforced number |
+| **RedStone Oracle (live)** | [`contracts/src/StratusRedstoneOracle.sol`](./contracts/src/StratusRedstoneOracle.sol) | Live, signed pull-oracle price feeds for gold spot + S&P 500 index level |
+| **Chainlink Oracle (alternate, live)** | [`contracts/src/StratusChainlinkPriceOracle.sol`](./contracts/src/StratusChainlinkPriceOracle.sol) | Real, push-based feeds kept as a working alternate |
+| **Pyth Oracle (as designed)** | [`contracts/src/StratusPriceOracle.sol`](./contracts/src/StratusPriceOracle.sol) | Originally designed oracle, plus the tinybar-precision fix (`_roundUpToTinybar`) — see [Additional feedback](#additional-feedback-for-hedera) below |
+| **Live Price Reader** | [`contracts/src/StratusLivePriceReader.sol`](./contracts/src/StratusLivePriceReader.sol) | Standalone real-time price reads for the UI, independent of the pool's cached oracle |
+| **Lending Core** | [`contracts/lib/bonzo/`](./contracts/lib/bonzo/) | Forked, unmodified `bonzo-finance-contracts` (Aave v2) |
+| **Self-Serve Marketplace** | [`contracts/src/StratusMarketplace.sol`](./contracts/src/StratusMarketplace.sol) | `buy()` — purchase tokenized assets with USDC, auto-whitelist in the same transaction |
+| **HTS Token Association** | [`frontend/src/pages/Advisor.tsx`](./frontend/src/pages/Advisor.tsx) | Calls the `0x167` HTS precompile (`associateToken`) before interacting with native HTS reserves |
 
-## 9. Live Deployment & Verified Results
+### Hedera Endpoints in Use
 
-All addresses on **Hedera testnet** (chain id 296) — full record with every transaction hash in [`deployments/hederaTestnet.json`](./deployments/hederaTestnet.json).
+| API | Endpoint | Purpose |
+|---|---|---|
+| JSON-RPC relay | `https://testnet.hashio.io/api` | All contract reads/writes — chain id 296 |
+| Mirror node | `https://testnet.mirrornode.hedera.com` | Transaction result / revert-reason lookups during development and verification |
+| ATS Factory / Resolver | `0xd1F118A40f3b02883D35909eF2517e7EDd78379d` / `0xBA2D5FC2083A0b8f164c50e65d782087fBA18E0a` | Issues and resolves the ATS Equity diamond contracts for GOLD-x / STOCK-x |
+| HTS system precompile | `0x0000000000000000000000000000000000000167` | Native token association, called directly before approving/transferring third-party HTS reserves |
+
+---
+
+## Architecture
+
+```mermaid
+graph TD
+    U["User holds Stratus ETF<br/>50% GOLD-x + 50% STOCK-x"] --> V["StratusVault.depositBasket()"]
+    V --> D{"Redeem basket<br/>to underlying"}
+    D --> G["Gold reserve<br/>Aave v2 pool · 70% LTV / 75% threshold"]
+    D --> S["S&P 500 reserve<br/>Aave v2 pool · 55% LTV / 65% threshold"]
+    G --> B["User borrows USDC<br/>against combined capacity"]
+    S --> B
+    B --> L{"Gold price<br/>crashes sharply?"}
+    L -->|Yes| LC["liquidationCall() on<br/>GOLD-x reserve ONLY"]
+    LC --> SI["S&P 500 reserve untouched,<br/>still backing the loan"]
+
+    style G fill:#d97706,color:#fff
+    style S fill:#4f46e5,color:#fff
+    style LC fill:#dc2626,color:#fff
+    style SI fill:#16a34a,color:#fff
+```
+
+### On-Chain Sequence
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Vault as StratusVault
+    participant Pool as LendingPool (Aave v2 fork)
+    participant Oracle as RedStone Oracle
+
+    User->>Vault: depositBasket(amount)
+    Vault->>Vault: redeem basket to GOLD-x + STOCK-x
+    Vault->>Pool: deposit(GOLD-x, amountA, onBehalfOf=user)
+    Vault->>Pool: deposit(STOCK-x, amountB, onBehalfOf=user)
+    Pool-->>User: aGOLD-x + aSTOCK-x minted to user
+    User->>Pool: borrow(USDC, amount)
+    Pool->>Oracle: getAssetPrice(GOLD-x), getAssetPrice(STOCK-x)
+    Pool-->>User: USDC borrowed
+    Note over Pool: If gold price crashes sharply
+    User->>Pool: liquidationCall(GOLD-x, USDC, user)
+    Pool-->>User: Only GOLD-x reserve liquidated —<br/>STOCK-x aToken balance unchanged
+```
+
+---
+
+## Setup
+
+### Contracts
+
+```bash
+npm install
+
+# Local unit tests, no network needed
+cd contracts && npm run compile && npm test
+
+# Deploy scripts that touch the live testnet deployment are numbered/named
+# under contracts/script/ and contracts/lib/bonzo/script/ — see
+# contracts/script/README.md for the exact order they were run in.
+```
+
+### Tokenization (ATS)
+
+```bash
+cd tokenization
+cp .env.example .env   # funded Hedera testnet account, holds ROLE_CONTROL_LIST
+npm run issue:assets
+```
+
+### Frontend
+
+```bash
+cd frontend
+cp .env.example .env   # already pointed at the live deployment below
+npm run dev
+```
+
+Requires a `.env` in `contracts/` and `tokenization/` with a funded Hedera testnet account to run anything against the live network — the unit test suites (`contracts/test/`) need no network access at all.
+
+---
+
+## How It Works
+
+### User Flow
+
+```
+Faucet / Buy → Mint Basket → Deposit & Decompose → Borrow → (if unhealthy) Isolated Liquidation
+```
+
+1. **Acquire Gold + S&P 500 Index** — via the Faucet (free testnet mint) or the Marketplace (`/buy`, pay in USDC, auto-whitelisted on the ATS control list in the same transaction).
+2. **Mint the basket** — combine 50/50 into one Stratus ETF token (`/mint`).
+3. **Deposit & decompose** — one action splits it into two isolated reserve positions (`/deposit`).
+4. **Borrow** — draw USDC against the combined capacity of both legs (`/borrow`).
+5. **If a leg's price crashes** — only that reserve gets liquidated; the other keeps backing the loan.
+
+---
+
+## Smart Contract Details
+
+### Contract Addresses (Hedera Testnet, chain id 296)
+
+Full record with every transaction hash in [`deployments/hederaTestnet.json`](./deployments/hederaTestnet.json).
 
 | Contract | Address |
 |---|---|
@@ -122,37 +238,93 @@ All addresses on **Hedera testnet** (chain id 296) — full record with every tr
 | StratusBasketToken | [`0x2255Eb7Bc29A27E2b9113D6BA28807812Bd4DEaD`](https://hashscan.io/testnet/contract/0x2255Eb7Bc29A27E2b9113D6BA28807812Bd4DEaD) |
 | StratusVault | [`0x7F16Cd599BF2aDBBacD856263ef36eABFfeC06B2`](https://hashscan.io/testnet/contract/0x7F16Cd599BF2aDBBacD856263ef36eABFfeC06B2) |
 | StratusRiskView | [`0x499a48fAAC43c79E2bd0c99D8b9cB601eF0755D2`](https://hashscan.io/testnet/contract/0x499a48fAAC43c79E2bd0c99D8b9cB601eF0755D2) |
-| StratusRedstoneOracle (live — real gold + S&P 500, 6h maxPriceAge) | [`0x7aa45f5Ff7e99f13C60F6f3913aaff68E51DfdD9`](https://hashscan.io/testnet/contract/0x7aa45f5Ff7e99f13C60F6f3913aaff68E51DfdD9) |
+| StratusRedstoneOracle (live) | [`0x7aa45f5Ff7e99f13C60F6f3913aaff68E51DfdD9`](https://hashscan.io/testnet/contract/0x7aa45f5Ff7e99f13C60F6f3913aaff68E51DfdD9) |
 | StratusChainlinkPriceOracle (alternate, live) | [`0x784B85521B77F43655960718539E85fBa012e659`](https://hashscan.io/testnet/contract/0x784B85521B77F43655960718539E85fBa012e659) |
 | StratusPriceOracle (Pyth, as designed) | [`0xB590789A6cC576ED8C14A3E846c16b9f9a4Cc681`](https://hashscan.io/testnet/contract/0xB590789A6cC576ED8C14A3E846c16b9f9a4Cc681) |
 | LendingPool (Bonzo/Aave v2 fork) | [`0x36f251a19372c550cc3784E108391eeC004B903E`](https://hashscan.io/testnet/contract/0x36f251a19372c550cc3784E108391eeC004B903E) |
 
-Plus **10 individual real-stock reserves** (Apple, Tesla, Microsoft, Nvidia, Alphabet, Amazon, Meta, Berkshire Hathaway, AMD, Palantir) — each its own ATS token, pool reserve, and live RedStone price feed, deposited/borrowed directly at `/stocks`. Full address table and a real ticker-collision catch-and-fix (an 11th candidate, meant to be Chevron, turned out to be an unrelated crypto token — caught by sanity-checking prices, not just symbols) in [`docs/phase-4-individual-stocks.md`](./docs/phase-4-individual-stocks.md).
+Plus **10 individual real-stock reserves** (Apple, Tesla, Microsoft, Nvidia, Alphabet, Amazon, Meta, Berkshire Hathaway, AMD, Palantir) — each its own ATS token, pool reserve, and live RedStone price feed, deposited/borrowed directly at `/stocks`. Full address table in [`docs/phase-4-individual-stocks.md`](./docs/phase-4-individual-stocks.md).
 
-Plus **StratusMarketplace** (`/buy`) — any wallet buys Gold/S&P 500 Index/individual stocks directly with USDC, auto-whitelisted on the ATS control list as part of the same transaction, no admin step — and **20 top-market-cap crypto reserves** (BTC, ETH, USDT, XRP, BNB, SOL, DOGE, ADA, TRX, AVAX, SHIB, LINK, DOT, BCH, TON, SUI, NEAR, LTC, ICP, UNI) borrowable alongside USDC at `/borrow`. Both verified end-to-end with real transactions — see [`docs/phase-5-crypto-borrow.md`](./docs/phase-5-crypto-borrow.md).
+Plus **StratusMarketplace** (`/buy`) and **20 top-market-cap crypto reserves** borrowable alongside USDC at `/borrow` — see [`docs/phase-5-crypto-borrow.md`](./docs/phase-5-crypto-borrow.md).
 
-### What's been proven, on-chain, for real
+### Key Functions
+
+```
+StratusVault
+  depositBasket(uint256 basketAmount)                                   — decompose the basket into two isolated reserve deposits
+  recomposeBasket(uint256 basketAmount)                                 — pull withdrawn underlying, re-mint the basket token
+  event BasketDecomposed(user, basketAmount, amountA, amountB)
+  event BasketRecomposed(user, basketAmount, amountA, amountB)
+
+StratusBasketToken
+  previewComponents(uint256 basketAmount) view returns (amountA, amountB)
+  mint(uint256 basketAmount) returns (amountA, amountB)
+  redeem(uint256 basketAmount) returns (amountA, amountB)
+
+StratusRiskView
+  getUserRisk(address user, address componentA, address componentB)
+    returns (UserRisk memory risk)                                      — per-leg + combined health factor in one read
+
+StratusMarketplace
+  quote(address token, uint256 tokenAmount) view returns (uint256 usdcCost)
+  buy(address token, uint256 tokenAmount)                                — pay USDC, receive the token, auto-whitelisted
+```
+
+---
+
+## Deployment Checklist
+
+- [x] Real ATS Equity diamonds issued for GOLD-x and STOCK-x
+- [x] Real, unmodified Aave v2 lending core (Bonzo fork), deployed through the actual upgradeable-proxy flow
+- [x] `StratusVault` — basket decompose/recompose, both directions verified on-chain
+- [x] `StratusRiskView` — per-component health factor alongside the pool's real, enforced number
+- [x] Real RedStone price feeds for gold spot + S&P 500 index level
+- [x] Chainlink kept wired as a real, working alternate oracle
+- [x] Isolated liquidation, proven both directions (gold-crashes and stock-crashes scenarios)
+- [x] 10 individual real-stock reserves (deposit/withdraw verified)
+- [x] Self-serve marketplace + 20 crypto borrow reserves
+- [x] Frontend wired to the live deployment, verified in a real browser session
+- [x] Three upstream ATS friction points filed
+- [ ] Custom allocation ratios / N-asset baskets (noted as future work in [`PLAN.md`](./PLAN.md))
+
+### What's Been Proven, On-Chain, For Real
 
 | Gate | Result |
 |---|---|
-| **Gate 1** — basket mint/redeem round trip | ✅ Passed — real ATS underlying, exact balances, zero dust |
-| **Gate 2** — deposit → borrow → repay → withdraw, raw pool | ✅ Passed, fully — including borrow/repay, unblocked by the oracle pivot |
-| **Gate 3** — basket deposit/decompose + withdraw/recompose | ✅ Passed, fully |
-| **Gate 4** — isolated liquidation, both directions | ✅ Passed — gold-crashes and stock-crashes scenarios both run for real, untouched-leg invariant held exactly both times |
-| **Gate 5** — frontend wired and reading live data | ✅ Verified in a real browser session against this deployment |
-| **Individual stocks** — deposit/withdraw on a newly-added reserve | ✅ Passed — AAPL-x, balances restored exactly; see `docs/phase-4-individual-stocks.md` |
+| **Gate 1** — basket mint/redeem round trip | Passed — real ATS underlying, exact balances, zero dust |
+| **Gate 2** — deposit → borrow → repay → withdraw, raw pool | Passed, fully |
+| **Gate 3** — basket deposit/decompose + withdraw/recompose | Passed, fully |
+| **Gate 4** — isolated liquidation, both directions | Passed — untouched-leg invariant held exactly both times |
+| **Gate 5** — frontend wired and reading live data | Verified in a real browser session |
+| **Individual stocks** — deposit/withdraw on a newly-added reserve | Passed — AAPL-x, balances restored exactly |
 
 Full phase-by-phase build log, every architectural decision, and every blocker encountered (including the ones that didn't work) are in [`PLAN.md`](./PLAN.md) and the `docs/phase-*-findings.md` files — written as they happened, not cleaned up after the fact.
 
 ---
 
-## Not part of this submission
+## Hackathon Submission
 
-The live app's nav also has **Stake**, **Advisor**, and (from Advisor) live rate comparisons against **Bonzo Finance** and **Cirrus Finance** (a second lending market this same project also deployed). These are real, working, and disclosed as such in `docs/phase-6-ai-advisor.md` — but they're generic DeFi features (a reward-token staking pool, a deterministic + optional-LLM yield ranker, an x402 payment-gated premium tier) with no connection to Hedera tokenization or basket-collateral lending, and no separate prize track at this event covers them either. They exist because this repo kept growing after the Hedera-track submission was already feature-complete, not because they're part of what's being submitted here. **The actual submission is §1–§9 above** — the basket mint → deposit/decompose → borrow → isolated liquidation flow. Treat everything past this line as an unscored exploration, not a second pitch competing for the same judges' attention.
+| | |
+|---|---|
+| **Event** | ETHGlobal ETHOnline 2026 |
+| **Primary track** | Hedera — Tokenization of Anything ($6,000, up to 3 teams @ $2,000) |
+| **Secondary track** | Open Source: Improve the Hedera Harness ($2,000) |
+| **ATS upstream contribution** | 3 friction points filed against `hashgraph/asset-tokenization-studio` — [#1397](https://github.com/hashgraph/asset-tokenization-studio/issues/1397), [#1398](https://github.com/hashgraph/asset-tokenization-studio/issues/1398), [#1399](https://github.com/hashgraph/asset-tokenization-studio/issues/1399) |
+| **Hedera Harness contribution** | New Tier 0-1 deterministic check for the tinybar-precision gotcha — [PR #45](https://github.com/hedera-dev/hedera-harness/pull/45) |
+
+### Additional Feedback for Hedera
+
+A real rough edge hit building this project: a Pyth refund (`msg.value - fee`) silently rounded to zero because Hedera's 8-decimal tinybar ledger drops native-value amounts below `1e10` wei, including internal contract-to-contract forwards. Fixed in [`contracts/src/StratusPriceOracle.sol`](./contracts/src/StratusPriceOracle.sol) (`_roundUpToTinybar`), documented in [`docs/phase-2-findings.md`](./docs/phase-2-findings.md), and contributed upstream to `hedera-dev/hedera-harness` so agent-generated Hedera contracts get the same guardrail.
 
 ---
 
-## Repository layout
+## Not Part of This Submission
+
+The live app's nav also has **Stake**, **Advisor**, and (from Advisor) live rate comparisons against **Bonzo Finance** and **Cirrus Finance** (a second lending market this same project also deployed). These are real, working, and disclosed as such in `docs/phase-6-ai-advisor.md` — but they're generic DeFi features (a reward-token staking pool, a deterministic + optional-LLM yield ranker, an x402 payment-gated premium tier) with no connection to Hedera tokenization or basket-collateral lending, and no separate prize track at this event covers them either. They exist because this repo kept growing after the Hedera-track submission was already feature-complete, not because they're part of what's being submitted here. **The actual submission is everything above this line** — the basket mint → deposit/decompose → borrow → isolated liquidation flow. Treat everything past this section as an unscored exploration, not a second pitch competing for the same judges' attention.
+
+---
+
+## Repository Layout
 
 ```
 stratus-finance/
@@ -165,26 +337,14 @@ stratus-finance/
 └─ README.md                  # This file
 ```
 
-See [`PLAN.md`](./PLAN.md) for the phased build plan, architecture decisions, and testing strategy — kept up to date with what actually happened at each step, including the Pyth→Chainlink oracle pivot and why.
+See [`PLAN.md`](./PLAN.md) for the phased build plan, architecture decisions, and testing strategy.
 
-## Getting started
+---
 
-```bash
-npm install
+## License
 
-# Contracts (Hardhat) — local unit tests, no network needed
-cd contracts && npm run compile && npm test
+MIT
 
-# Deploy scripts that touch the live testnet deployment are numbered/named
-# under contracts/script/ and contracts/lib/bonzo/script/ — see
-# contracts/script/README.md for the exact order they were run in.
+---
 
-# Tokenization scripts (ATS)
-cd tokenization && npm run issue:assets
-
-# Frontend — reads the addresses in frontend/.env (copy .env.example,
-# already pointed at the live deployment above)
-cd frontend && npm run dev
-```
-
-Requires a `.env` in `contracts/` and `tokenization/` with a funded Hedera testnet account (see `.env.example` in each) to run anything against the live network — the unit test suites (`contracts/test/`) need no network access at all.
+> Two legs, one wrapper, zero shared risk — Stratus Finance
