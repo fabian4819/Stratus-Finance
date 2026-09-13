@@ -1,9 +1,37 @@
 import { useState } from "react";
-import { Contract, parseUnits } from "ethers";
+import { Contract, parseUnits, type JsonRpcSigner } from "ethers";
 import { Link } from "react-router-dom";
 import { useWallet } from "../lib/WalletContext";
 import { getErc20 } from "../lib/contracts";
 import { LENDING_POOL_ABI } from "../lib/abis";
+
+/**
+ * Hedera's HTS system contract — a fixed precompile address on every
+ * Hedera EVM network, not something this app deploys. Native HTS tokens
+ * (like Bonzo's real testnet USDC, at the "long-zero" address
+ * 0x0000...1549 — unlike Stratus's own plain-Solidity MockUSDC) require
+ * the calling account to explicitly *associate* with a token before it
+ * can hold or approve/transfer it, even for a brand-new wallet that's
+ * never touched that specific token. This has nothing to do with
+ * Stratus's own tokens (plain ERC-20s or ATS diamonds, not raw HTS) —
+ * it only matters here because Bonzo's reserves are.
+ */
+const HTS_PRECOMPILE = "0x0000000000000000000000000000000000000167";
+const HTS_ABI = ["function associateToken(address account, address token) external returns (int64 responseCode)"];
+
+async function ensureAssociated(signer: JsonRpcSigner, account: string, token: string): Promise<void> {
+  const hts = new Contract(HTS_PRECOMPILE, HTS_ABI, signer);
+  try {
+    const tx = await hts.associateToken(account, token, { gasLimit: 800_000 });
+    await tx.wait();
+  } catch {
+    // The two realistic outcomes here are "associated successfully" and
+    // "already associated" (SUCCESS vs TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT
+    // in Hedera's response codes) — either way it's safe to move on to
+    // approve(). If something is genuinely wrong with this token/account,
+    // approve() or deposit() will surface a real error next.
+  }
+}
 import {
   loadCandidates,
   rankCandidates,
@@ -277,6 +305,9 @@ function ExternalSupplyAction({
     setBusy(true);
     setStatus(null);
     try {
+      setStatus(`Associating ${symbol} with your wallet (one-time, Hedera requires this for every new token)…`);
+      await ensureAssociated(signer, address, tokenAddress);
+
       const token = getErc20(tokenAddress, signer);
       const pool = new Contract(poolAddress, LENDING_POOL_ABI, signer);
       const supplyAmount = parseUnits(amount, decimals);
@@ -317,7 +348,8 @@ function ExternalSupplyAction({
         </button>
       </div>
       <p className="text-[11px] text-slate-400">
-        Requires your own {symbol} on {protocol}'s testnet — not a Stratus token.{" "}
+        Requires your own {symbol} on {protocol}'s testnet — not a Stratus token. First supply prompts 3
+        signatures (associate, approve, deposit) — Hedera requires associating with any new token once.{" "}
         {externalUrl && (
           <a href={externalUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">
             Open {protocol} ↗
