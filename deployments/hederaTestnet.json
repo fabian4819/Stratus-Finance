@@ -1,6 +1,6 @@
 {
   "network": "hederaTestnet",
-  "updatedAt": "2026-09-13T05:20:50.112Z",
+  "updatedAt": "2026-09-13T09:01:01.612Z",
   "contracts": {
     "GoldToken": "0xcF19378058EC9DFD25975527BDf7F68faeC2C7fc",
     "StockIndexToken": "0x59E3908069993cDDbD3C83479c1aFc92242c0d3A",
@@ -127,7 +127,29 @@
     "aToken_ICP": "0xc97EF2437a90f327713bC627FBD73Ff436B35936",
     "aToken_UNI": "0x778f0203b59D779cE2f92C3EB56C7b9f29D5fE85",
     "StratusRewardToken": "0xdD028cE033840B912f75C770DE5DC8607817E3A8",
-    "StratusStaking": "0x46B478047C338D20086695b6eDAE7a18C3e66f7D"
+    "StratusStaking": "0x46B478047C338D20086695b6eDAE7a18C3e66f7D",
+    "Cirrus_GenericLogic": "0xe51cDC2047859C466f70Baa5C896f26Df73e8009",
+    "Cirrus_ReserveLogic": "0xCF1d7379e87Cd0Df3a8fE284e285ce9c386C05d7",
+    "Cirrus_ValidationLogic": "0xC9AEa11E510bB7f6d7068FA28b3A5AeA32CDF2Bc",
+    "Cirrus_LendingPoolImpl": "0xA7777E0B8FBc9b3a917913f13e482f19013522C8",
+    "Cirrus_LendingPoolAddressesProvider": "0x13D05404e5E3ca237BdAB1CAB00a0521926f811F",
+    "Cirrus_LendingPool": "0x7D7d12FFa4b5e2d22890D7e8B0D01EfDe759A3D2",
+    "Cirrus_LendingPoolConfiguratorImpl": "0xb49Ad820FD73f5bf7Fb7126212d2e45134F6B67c",
+    "Cirrus_LendingPoolConfigurator": "0x99052C01d084a248627b82d09120006dD7564679",
+    "Cirrus_LendingPoolCollateralManager": "0x4Da2177d670075bc7B1C091Fbc7E639061cb193d",
+    "Cirrus_LendingRateOracle": "0x7CFfE9136797b2e76D87B4bA4444c6542fb982C2",
+    "Cirrus_ATokenImpl": "0x7F873652A61AcFB373b4197567F5c0aAd98Fa956",
+    "Cirrus_StableDebtTokenImpl": "0x4feB17aCD7a94a053c22753646c0dFd7cD425af5",
+    "Cirrus_VariableDebtTokenImpl": "0x456329fa5F0d2fbAE60e80339748808aa5c57c7B",
+    "Cirrus_ProtocolDataProvider": "0xd33fcD208fA1911F3Aa38479FB7E30cf7fC4198B",
+    "Cirrus_InterestRateStrategy_USDC": "0x4081695460D7505e201cE96a50F059c28927AD96",
+    "Cirrus_InterestRateStrategy_BTC": "0xf1799F64b0A6DDdf7D39a6a33371380E22aA7eBD",
+    "Cirrus_InterestRateStrategy_ETH": "0x38DD17079987D0174c4Cb61e3aA9080840B2F848",
+    "Cirrus_InterestRateStrategy_SOL": "0xf0019d56dc24B6162D159b80a664aA4D67d22f59",
+    "Cirrus_aToken_USDC": "0xF8e8F310f8013FB9C7018158EDa616DC6853C411",
+    "Cirrus_aToken_BTC": "0xC8D56afE0807dd2ecF7Ac6A747e909e29bb47BFa",
+    "Cirrus_aToken_ETH": "0x14925e148d1981db2594e32E5EB4306EbAA3CD78",
+    "Cirrus_aToken_SOL": "0x106B331565B2053a7F99E0b22503Cc7611c65418"
   },
   "meta": {
     "gate1RoundTrip": {

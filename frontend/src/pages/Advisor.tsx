@@ -62,17 +62,19 @@ interface CardData {
 }
 
 /** AI advisor — recommends across Stratus's own yield surfaces (lending
- * supply, StratusStaking) AND Bonzo Finance's real testnet deployment
- * (a genuinely different, independently-deployed lending protocol) — a
- * real cross-protocol comparison, not just internal allocation. Advisor
- * only, never an agent: it ranks and explains, the user always clicks
- * "Supply" and signs the transaction themselves — a Bonzo pick executes
- * a real approve+deposit straight into Bonzo's own public LendingPool
- * contract from this page (same wallet, no redirect needed — Bonzo's
- * pool has the same Aave v2 interface Stratus's own pool uses), it just
- * never happens without the user's own click. Free tier is a
- * deterministic, zero-network scorer; premium tier pays 1 USDC via
- * x402 for a DeepSeek-reasoned pick — see docs/phase-6-ai-advisor.md. */
+ * supply, StratusStaking), Cirrus Finance (a second, independently-
+ * deployed lending market this project also runs), and Bonzo Finance's
+ * real testnet deployment (a genuinely different, third-party lending
+ * protocol) — a real cross-protocol comparison, not just internal
+ * allocation. Advisor only, never an agent: it ranks and explains, the
+ * user always clicks "Supply" and signs the transaction themselves — a
+ * Cirrus/Bonzo pick executes a real approve+deposit straight into that
+ * pool's own public LendingPool contract from this page (same wallet,
+ * no redirect needed — both have the same Aave v2 interface Stratus's
+ * own pool uses), it just never happens without the user's own click.
+ * Free tier is a deterministic, zero-network scorer; premium tier pays
+ * 1 USDC via x402 for a DeepSeek-reasoned pick — see
+ * docs/phase-6-ai-advisor.md. */
 export function Advisor() {
   const { signer, address, connect } = useWallet();
   const [risk, setRisk] = useState<RiskPreference>("balanced");
@@ -144,7 +146,7 @@ export function Advisor() {
     <div>
       <PageHeader
         title="Advisor"
-        subtitle="Recommends where to put idle assets — across Stratus's own supply/staking and Bonzo Finance's real testnet lending rates. It only ranks and explains; you always execute the move yourself."
+        subtitle="Recommends where to put idle assets — across Stratus's own supply/staking, Cirrus Finance (a second lending market this project also deployed), and Bonzo Finance's real testnet lending rates. It only ranks and explains; you always execute the move yourself."
       />
 
       <div className="card mb-5 p-5">
@@ -251,6 +253,7 @@ function RecommendationCard({
           tokenAddress={tokenAddress}
           decimals={decimals}
           externalUrl={externalUrl}
+          sharesStratusToken={protocol === "Cirrus Finance"}
         />
       ) : externalUrl ? (
         <a
@@ -273,13 +276,15 @@ function RecommendationCard({
   );
 }
 
-/** Executes a real approve+deposit straight into an external protocol's
- * own LendingPool (Bonzo Finance today) — same Aave v2 interface
- * Stratus's own pool uses, called directly with the already-connected
- * wallet. No redirect: this signs a transaction against a contract
- * Stratus doesn't own or control, same as clicking "Supply" anywhere
- * else in this app, just pointed at someone else's pool. The user needs
- * that protocol's own reserve token (not a Stratus one) in their wallet. */
+/** Executes a real approve+deposit straight into a second LendingPool —
+ * either Bonzo Finance (genuinely external, needs Bonzo's own reserve
+ * token, needs HTS association since those are native HTS tokens) or
+ * Cirrus Finance (this project's own second pool, reserves are the same
+ * plain-ERC20 tokens as Stratus's own pool, so no association and no
+ * separate funding needed — sharesStratusToken flags that case). Same
+ * Aave v2 interface Stratus's own pool uses, called directly with the
+ * already-connected wallet — no redirect, same as clicking "Supply"
+ * anywhere else in this app, just pointed at a different pool. */
 function ExternalSupplyAction({
   protocol,
   symbol,
@@ -287,6 +292,7 @@ function ExternalSupplyAction({
   tokenAddress,
   decimals,
   externalUrl,
+  sharesStratusToken,
 }: {
   protocol: string;
   symbol: string;
@@ -294,6 +300,7 @@ function ExternalSupplyAction({
   tokenAddress: string;
   decimals: number;
   externalUrl?: string;
+  sharesStratusToken?: boolean;
 }) {
   const { signer, address, connect } = useWallet();
   const [amount, setAmount] = useState("1");
@@ -324,8 +331,10 @@ function ExternalSupplyAction({
     setBusy(true);
     setStatus(null);
     try {
-      setStatus(`Associating ${symbol} with your wallet (one-time, Hedera requires this for every new token)…`);
-      await ensureAssociated(signer, address, tokenAddress);
+      if (!sharesStratusToken) {
+        setStatus(`Associating ${symbol} with your wallet (one-time, Hedera requires this for every new token)…`);
+        await ensureAssociated(signer, address, tokenAddress);
+      }
 
       const token = getErc20(tokenAddress, signer);
       const pool = new Contract(poolAddress, LENDING_POOL_ABI, signer);
@@ -378,12 +387,20 @@ function ExternalSupplyAction({
       </div>
       {!hasBalance && balance !== null && (
         <p className="mb-2 text-[11px] font-medium text-rose-600">
-          You don't hold any {symbol} on {protocol} yet — get some there first, Stratus can't provide it.
+          {sharesStratusToken
+            ? `You don't hold any ${symbol} yet — get some from the Faucet first.`
+            : `You don't hold any ${symbol} on ${protocol} yet — get some there first, Stratus can't provide it.`}
         </p>
       )}
       <p className="text-[11px] text-slate-400">
-        Requires your own {symbol} on {protocol}'s testnet — not a Stratus token. First supply prompts 3
-        signatures (associate, approve, deposit) — Hedera requires associating with any new token once.{" "}
+        {sharesStratusToken ? (
+          <>This is the same {symbol} you already hold on Stratus — Cirrus Finance is a second lending market this project also deployed, so no separate token is needed. One signature (approve, deposit).</>
+        ) : (
+          <>
+            Requires your own {symbol} on {protocol}'s testnet — not a Stratus token. First supply prompts 3
+            signatures (associate, approve, deposit) — Hedera requires associating with any new token once.
+          </>
+        )}{" "}
         {externalUrl && (
           <a href={externalUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">
             Open {protocol} ↗

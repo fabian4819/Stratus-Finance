@@ -9,7 +9,7 @@ const SECONDS_PER_YEAR = 365 * 24 * 60 * 60;
 const RAY = 1e27;
 
 export type RiskPreference = "conservative" | "balanced" | "aggressive";
-export type SupplyProtocol = "Stratus" | "Bonzo Finance";
+export type SupplyProtocol = "Stratus" | "Cirrus Finance" | "Bonzo Finance";
 
 export interface SupplyCandidate {
   target: "supply";
@@ -35,6 +35,28 @@ export interface StakeCandidate {
 }
 
 export type Candidate = SupplyCandidate | StakeCandidate;
+
+function importEnv(key: string): string {
+  return (import.meta.env[key] as string | undefined) ?? "";
+}
+
+/**
+ * Cirrus Finance — a second, independently-deployed Aave v2 lending
+ * market (its own LendingPool/Configurator/DataProvider stack, not a
+ * reserve on Stratus's own pool) that this project also deployed, so
+ * the AI Advisor has a genuine second market to compare against and
+ * execute into. Its reserves reuse Stratus's own USDC/BTC/ETH/SOL token
+ * contracts, so any balance a wallet already has from the Stratus
+ * Faucet is immediately supply-able here too — no separate token needed.
+ */
+export const CIRRUS_LENDING_POOL = importEnv("VITE_CIRRUS_LENDING_POOL");
+const CIRRUS_DATA_PROVIDER = importEnv("VITE_CIRRUS_DATA_PROVIDER");
+const CIRRUS_RESERVES = [
+  { symbol: "USDC", displayName: "USDC", tokenAddress: importEnv("VITE_USDC"), decimals: 6 },
+  { symbol: "BTC", displayName: "Bitcoin", tokenAddress: importEnv("VITE_BTC_TOKEN"), decimals: 18 },
+  { symbol: "ETH", displayName: "Ethereum", tokenAddress: importEnv("VITE_ETH_TOKEN"), decimals: 18 },
+  { symbol: "SOL", displayName: "Solana", tokenAddress: importEnv("VITE_SOL_TOKEN"), decimals: 18 },
+];
 
 /**
  * Bonzo Finance — Hedera's own Aave v2 fork, live on testnet — is a
@@ -86,6 +108,7 @@ export async function loadCandidates(): Promise<{ supply: SupplyCandidate[]; sta
   const dataProvider = getDataProvider(readProvider);
   const staking = getStaking(readProvider);
   const bonzoDataProvider = new Contract(BONZO_DATA_PROVIDER, PROTOCOL_DATA_PROVIDER_ABI, readProvider);
+  const cirrusDataProvider = new Contract(CIRRUS_DATA_PROVIDER, PROTOCOL_DATA_PROVIDER_ABI, readProvider);
 
   const stratusSupply = await Promise.all(
     individualStocks.map(async (a) => {
@@ -102,6 +125,29 @@ export async function loadCandidates(): Promise<{ supply: SupplyCandidate[]; sta
       };
     })
   );
+
+  const cirrusSupply = (
+    await Promise.all(
+      CIRRUS_RESERVES.map(async (a): Promise<SupplyCandidate | null> => {
+        try {
+          const data = await cirrusDataProvider.getUserReserveData(a.tokenAddress, ZeroAddress);
+          const apyPct = (Number(data.liquidityRate) / RAY) * 100;
+          return {
+            target: "supply",
+            protocol: "Cirrus Finance",
+            symbol: a.symbol,
+            displayName: a.displayName,
+            apyPct,
+            tokenAddress: a.tokenAddress,
+            decimals: a.decimals,
+            poolAddress: CIRRUS_LENDING_POOL,
+          };
+        } catch {
+          return null;
+        }
+      })
+    )
+  ).filter((c): c is SupplyCandidate => c !== null);
 
   const bonzoSupply = (
     await Promise.all(
@@ -152,7 +198,7 @@ export async function loadCandidates(): Promise<{ supply: SupplyCandidate[]; sta
     })
   );
 
-  return { supply: [...stratusSupply, ...bonzoSupply], stake };
+  return { supply: [...stratusSupply, ...cirrusSupply, ...bonzoSupply], stake };
 }
 
 /** Free tier: deterministic, transparent, zero external calls beyond
@@ -175,7 +221,12 @@ export function rankCandidates(
 
 export function reasoningFor(c: Candidate): string {
   if (c.target === "supply") {
-    const where = c.protocol === "Stratus" ? "the Stratus pool" : `${c.protocol} (external, real testnet deployment)`;
+    const where =
+      c.protocol === "Stratus"
+        ? "the Stratus pool"
+        : c.protocol === "Cirrus Finance"
+          ? "Cirrus Finance (a second lending market this project also deployed, real testnet contract)"
+          : `${c.protocol} (external, real testnet deployment)`;
     return `Supplying ${c.displayName} on ${where} currently earns ${c.apyPct.toFixed(2)}% APY.`;
   }
   return `Staking ${c.displayName} currently emits ~${c.stratPerTokenPerYear.toFixed(4)} STRAT per token per year.`;
