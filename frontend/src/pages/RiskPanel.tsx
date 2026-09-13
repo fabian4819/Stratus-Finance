@@ -6,7 +6,16 @@ import { addresses, addressesConfigured } from "../lib/addresses";
 import { getOracle, getRiskView } from "../lib/contracts";
 import { readProvider } from "../lib/wallet";
 import { fetchLivePrices } from "../lib/liveRedstonePrice";
-import { PageHeader, TokenBadge, HeroStat, NotConfiguredNotice, HealthFactor, healthFactorParts } from "../components/ui";
+import { TrendingUp, ShieldCheck } from "lucide-react";
+import {
+  PageHeader,
+  TokenBadge,
+  HeroStat,
+  SectionHeader,
+  NotConfiguredNotice,
+  HealthFactor,
+  healthFactorParts,
+} from "../components/ui";
 
 interface ComponentRisk {
   aTokenBalance: bigint;
@@ -118,10 +127,7 @@ export function RiskPanel() {
 
       <div className="mt-5 grid gap-5 lg:grid-cols-2">
         <div className="card p-5">
-          <div className="mb-3 flex items-center gap-2">
-            <span className="flex h-2 w-2 rounded-full bg-emerald-500" />
-            <h2 className="section-title">Live market prices</h2>
-          </div>
+          <SectionHeader icon={TrendingUp} eyebrow="Real-time" title="Live market prices" />
           <div className="space-y-2.5 text-sm">
             <PriceRow symbol="GOLD" name="Gold (XAU/USD)" value={price(prices?.gold)} />
             <PriceRow symbol="SPX" name="S&P 500 Index" value={price(prices?.stock)} />
@@ -130,7 +136,7 @@ export function RiskPanel() {
         </div>
 
         <div className="card p-5">
-          <h2 className="section-title mb-3">Health by leg</h2>
+          <SectionHeader icon={ShieldCheck} eyebrow="Isolated per leg" title="Health by leg" />
           <div className="space-y-4">
             <HealthBar label="Gold leg" component={risk?.components[0]} />
             <HealthBar label="S&P 500 Index leg" component={risk?.components[1]} />
@@ -147,12 +153,12 @@ export function RiskPanel() {
 
 function PriceRow({ symbol, name, value }: { symbol: string; name: string; value: string }) {
   return (
-    <div className="flex items-center justify-between">
-      <span className="flex items-center gap-2 text-slate-600">
+    <div className="card-elevated flex items-center justify-between px-3 py-2.5">
+      <span className="flex items-center gap-2 text-sm text-slate-600">
         <TokenBadge symbol={symbol} size={22} />
         {name}
       </span>
-      <span className="tabular-nums font-medium text-slate-900">{value}</span>
+      <span className="tabular-nums font-semibold tracking-tight text-slate-900">{value}</span>
     </div>
   );
 }
@@ -164,19 +170,19 @@ function HealthBar({ label, component }: { label: string; component?: ComponentR
   const healthy = isMax || (hf !== undefined && Number(formatEther(hf)) >= 1.2);
 
   return (
-    <div>
+    <div className="card-elevated p-3">
       <div className="mb-1.5 flex items-center justify-between text-sm">
-        <span className="text-slate-600">{label}</span>
+        <span className="font-medium tracking-tight text-slate-700">{label}</span>
         <HealthFactor hf={hf} />
       </div>
-      <div className="h-2 w-full rounded-full bg-slate-100">
+      <div className="h-1.5 w-full rounded-full bg-white/70">
         <div
-          className={`h-2 rounded-full ${healthy ? "bg-emerald-500" : "bg-amber-500"}`}
+          className={`h-1.5 rounded-full ${healthy ? "bg-emerald-500" : "bg-amber-500"}`}
           style={{ width: `${pct}%` }}
         />
       </div>
       {component && (
-        <div className="mt-1 text-xs text-slate-400">
+        <div className="mt-1.5 text-xs text-slate-400">
           Collateral value ${Number(formatEther(component.collateralValueUsd)).toFixed(2)}
         </div>
       )}

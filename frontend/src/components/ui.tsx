@@ -1,6 +1,7 @@
-import { useState, type ReactNode } from "react";
+import { useState, type ReactNode, type ComponentType } from "react";
 import { formatEther, MaxUint256 } from "ethers";
 import { motion } from "framer-motion";
+import type { LucideProps } from "lucide-react";
 import { assetLogo } from "../lib/assetLogos";
 
 /** Shared presentational bits used across the pages — no chain logic, no state. */
@@ -46,11 +47,62 @@ export function TokenBadge({ symbol, size = 32 }: { symbol: string; size?: numbe
 
   return (
     <span
-      className={`inline-flex shrink-0 items-center justify-center rounded-full font-semibold ${paletteFor(symbol)}`}
+      className={`inline-flex shrink-0 items-center justify-center rounded-full font-semibold tracking-tight uppercase ${paletteFor(symbol)}`}
       style={{ width: size, height: size, fontSize: Math.max(10, size * 0.34) }}
     >
       {initials}
     </span>
+  );
+}
+
+/** Icon-chip section header — a small tinted icon box next to an
+ * uppercase eyebrow + title, with an optional trailing value on the
+ * right (e.g. a running total). */
+export function SectionHeader({
+  icon: Icon,
+  eyebrow,
+  title,
+  trailing,
+}: {
+  icon: ComponentType<LucideProps>;
+  eyebrow: string;
+  title: string;
+  trailing?: ReactNode;
+}) {
+  return (
+    <div className="mb-3 flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        <span className="icon-chip">
+          <Icon className="h-3.5 w-3.5" aria-hidden />
+        </span>
+        <div>
+          <div className="eyebrow">{eyebrow}</div>
+          <div className="text-sm font-semibold tracking-tight text-slate-900">{title}</div>
+        </div>
+      </div>
+      {trailing && <div className="text-right">{trailing}</div>}
+    </div>
+  );
+}
+
+/** Small rounded-full secondary action, e.g. a per-row Withdraw/Claim
+ * button — tactile press feedback via .pill-btn. */
+export function Pill({
+  children,
+  onClick,
+  disabled,
+  icon: Icon,
+}: {
+  children: ReactNode;
+  onClick?: () => void;
+  disabled?: boolean;
+  icon?: ComponentType<LucideProps>;
+}) {
+  return (
+    <button type="button" onClick={onClick} disabled={disabled} className="pill-btn">
+      {Icon && <Icon className="h-3 w-3" aria-hidden />}
+      {children}
+    </button>
   );
 }
 
@@ -87,7 +139,7 @@ export function HeroStat({
         className="relative z-10 px-6 py-7 sm:px-8 sm:py-9"
       >
         <div className="text-xs font-medium text-indigo-100">{label}</div>
-        <div className="mt-1.5 text-4xl font-bold tabular-nums text-white sm:text-[42px]">{value}</div>
+        <div className="mt-1.5 text-4xl font-bold tabular-nums tracking-tight text-white sm:text-[42px]">{value}</div>
         {sub && sub.length > 0 && (
           <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-indigo-100/85">
             {sub.map((s) => (
@@ -118,7 +170,7 @@ export function StatCard({
   return (
     <div className="card card-hover p-4">
       <div className="stat-label">{label}</div>
-      <div className={`mt-1 text-xl font-semibold tabular-nums ${toneCls}`}>{value}</div>
+      <div className={`mt-1 text-xl font-semibold tabular-nums tracking-tight ${toneCls}`}>{value}</div>
       {hint && <div className="mt-0.5 text-xs text-slate-400">{hint}</div>}
     </div>
   );
@@ -135,7 +187,7 @@ export function healthFactorParts(hf: bigint | undefined): { text: string; cls: 
 
 export function HealthFactor({ hf, size = "md" }: { hf: bigint | undefined; size?: "md" | "lg" }) {
   const { text, cls } = healthFactorParts(hf);
-  return <span className={`font-semibold tabular-nums ${cls} ${size === "lg" ? "text-2xl" : ""}`}>{text}</span>;
+  return <span className={`font-semibold tabular-nums tracking-tight ${cls} ${size === "lg" ? "text-2xl" : ""}`}>{text}</span>;
 }
 
 export function ConnectPrompt({ onConnect, label }: { onConnect: () => void; label: string }) {
