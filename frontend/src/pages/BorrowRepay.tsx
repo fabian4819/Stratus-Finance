@@ -3,6 +3,7 @@ import { formatEther, formatUnits, parseUnits } from "ethers";
 import { useWallet } from "../lib/WalletContext";
 import { addresses, addressesConfigured } from "../lib/addresses";
 import { getPool, getRiskView, getErc20, getOracle } from "../lib/contracts";
+import { readProvider } from "../lib/wallet";
 import { individualStocks } from "../lib/individualStocks";
 import { borrowableAssets } from "../lib/borrowableAssets";
 import {
@@ -51,14 +52,16 @@ export function BorrowRepay() {
   const refresh = useCallback(async () => {
     if (!signer || !address) return;
     const pool = getPool(signer);
-    const riskView = getRiskView(signer);
+    // getUserRisk consistently fails through MetaMask's injected
+    // provider (verified live, see RiskPanel.tsx) — always read it via
+    // readProvider instead, since it takes `address` as a plain
+    // parameter and doesn't need the wallet's own provider.
+    const riskView = getRiskView(readProvider);
     const oracle = getOracle(signer);
 
-    // getUserRisk's eth_call sometimes gets truncated by MetaMask's own
-    // gas cap — verified live, see RiskPanel.tsx. Explicit override.
     const [data, risk] = await Promise.all([
       pool.getUserAccountData(address),
-      riskView.getUserRisk(address, addresses.goldToken, addresses.stockIndexToken, { gasLimit: 5_000_000 }),
+      riskView.getUserRisk(address, addresses.goldToken, addresses.stockIndexToken),
     ]);
 
     if (repayAsset) {

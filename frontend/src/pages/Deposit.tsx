@@ -3,6 +3,7 @@ import { formatEther, parseEther } from "ethers";
 import { useWallet } from "../lib/WalletContext";
 import { addresses, addressesConfigured } from "../lib/addresses";
 import { getBasketToken, getVault, getRiskView, getDataProvider } from "../lib/contracts";
+import { readProvider } from "../lib/wallet";
 import {
   PageHeader,
   TokenBadge,
@@ -44,14 +45,16 @@ export function Deposit() {
   const refresh = useCallback(async () => {
     if (!signer || !address) return;
     const basket = getBasketToken(signer);
-    const riskView = getRiskView(signer);
+    // getUserRisk consistently fails through MetaMask's injected
+    // provider (verified live, see RiskPanel.tsx) — always read it via
+    // readProvider instead, since it takes `address` as a plain
+    // parameter and doesn't need the wallet's own provider.
+    const riskView = getRiskView(readProvider);
     const dataProvider = getDataProvider(signer);
 
-    // getUserRisk's eth_call sometimes gets truncated by MetaMask's own
-    // gas cap — verified live, see RiskPanel.tsx. Explicit override.
     const [balance, userRisk, goldConfig, stockConfig] = await Promise.all([
       basket.balanceOf(address),
-      riskView.getUserRisk(address, addresses.goldToken, addresses.stockIndexToken, { gasLimit: 5_000_000 }),
+      riskView.getUserRisk(address, addresses.goldToken, addresses.stockIndexToken),
       dataProvider.getReserveConfigurationData(addresses.goldToken),
       dataProvider.getReserveConfigurationData(addresses.stockIndexToken),
     ]);
