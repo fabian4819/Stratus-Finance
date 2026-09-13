@@ -1,6 +1,9 @@
 import { useState } from "react";
+import { Contract, parseUnits } from "ethers";
 import { Link } from "react-router-dom";
 import { useWallet } from "../lib/WalletContext";
+import { getErc20 } from "../lib/contracts";
+import { LENDING_POOL_ABI } from "../lib/abis";
 import {
   loadCandidates,
   rankCandidates,
@@ -17,16 +20,31 @@ const RISK_OPTIONS: { value: RiskPreference; label: string }[] = [
   { value: "aggressive", label: "Aggressive" },
 ];
 
+interface CardData {
+  symbol: string;
+  displayName: string;
+  target: "supply" | "stake";
+  protocol: string;
+  externalUrl?: string;
+  poolAddress?: string;
+  tokenAddress?: string;
+  decimals?: number;
+  reasoning: string;
+  confidence: string;
+}
+
 /** AI advisor — recommends across Stratus's own yield surfaces (lending
  * supply, StratusStaking) AND Bonzo Finance's real testnet deployment
- * (a genuinely different, independently-deployed lending protocol,
- * read-only) — a real cross-protocol comparison, not just internal
- * allocation. Advisor only, never an agent: it ranks and explains, the
- * user always clicks through and executes manually — Bonzo picks link
- * to Bonzo's own testnet app, never something Stratus executes on the
- * user's behalf. Free tier is a deterministic, zero-network scorer;
- * premium tier pays 1 USDC via x402 for a DeepSeek-reasoned pick — see
- * docs/phase-6-ai-advisor.md. */
+ * (a genuinely different, independently-deployed lending protocol) — a
+ * real cross-protocol comparison, not just internal allocation. Advisor
+ * only, never an agent: it ranks and explains, the user always clicks
+ * "Supply" and signs the transaction themselves — a Bonzo pick executes
+ * a real approve+deposit straight into Bonzo's own public LendingPool
+ * contract from this page (same wallet, no redirect needed — Bonzo's
+ * pool has the same Aave v2 interface Stratus's own pool uses), it just
+ * never happens without the user's own click. Free tier is a
+ * deterministic, zero-network scorer; premium tier pays 1 USDC via
+ * x402 for a DeepSeek-reasoned pick — see docs/phase-6-ai-advisor.md. */
 export function Advisor() {
   const { signer, address, connect } = useWallet();
   const [risk, setRisk] = useState<RiskPreference>("balanced");
@@ -67,6 +85,32 @@ export function Advisor() {
       setBusy(false);
     }
   }
+
+  const freeCards: CardData[] = (free ?? []).map((c) => ({
+    symbol: c.symbol,
+    displayName: c.displayName,
+    target: c.target,
+    protocol: c.target === "supply" ? c.protocol : "Stratus",
+    externalUrl: c.target === "supply" ? c.externalUrl : undefined,
+    poolAddress: c.target === "supply" ? c.poolAddress : undefined,
+    tokenAddress: c.target === "supply" ? c.tokenAddress : undefined,
+    decimals: c.target === "supply" ? c.decimals : undefined,
+    reasoning: reasoningFor(c),
+    confidence: "deterministic",
+  }));
+
+  const premiumCards: CardData[] = (premium ?? []).map((p) => ({
+    symbol: p.symbol,
+    displayName: p.displayName,
+    target: p.target,
+    protocol: p.protocol,
+    externalUrl: p.externalUrl,
+    poolAddress: p.poolAddress,
+    tokenAddress: p.tokenAddress,
+    decimals: p.decimals,
+    reasoning: p.reasoning,
+    confidence: p.confidence,
+  }));
 
   return (
     <div>
@@ -119,17 +163,8 @@ export function Advisor() {
 
       {free && (
         <div className="grid gap-4 sm:grid-cols-2">
-          {free.map((c) => (
-            <RecommendationCard
-              key={`${c.target}-${c.target === "supply" ? c.protocol : ""}-${c.symbol}`}
-              symbol={c.symbol}
-              displayName={c.displayName}
-              target={c.target}
-              protocol={c.target === "supply" ? c.protocol : "Stratus"}
-              externalUrl={c.target === "supply" ? c.externalUrl : undefined}
-              reasoning={reasoningFor(c)}
-              confidence="deterministic"
-            />
+          {freeCards.map((c) => (
+            <RecommendationCard key={`${c.target}-${c.protocol}-${c.symbol}`} {...c} />
           ))}
         </div>
       )}
@@ -143,17 +178,8 @@ export function Advisor() {
               : "deterministic fallback (DeepSeek call failed, payment still honored)"}
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
-            {premium.map((p) => (
-              <RecommendationCard
-                key={`${p.target}-${p.protocol}-${p.symbol}`}
-                symbol={p.symbol}
-                displayName={p.displayName}
-                target={p.target}
-                protocol={p.protocol}
-                externalUrl={p.externalUrl}
-                reasoning={p.reasoning}
-                confidence={p.confidence}
-              />
+            {premiumCards.map((c) => (
+              <RecommendationCard key={`${c.target}-${c.protocol}-${c.symbol}`} {...c} />
             ))}
           </div>
         </>
@@ -168,17 +194,14 @@ function RecommendationCard({
   target,
   protocol,
   externalUrl,
+  poolAddress,
+  tokenAddress,
+  decimals,
   reasoning,
   confidence,
-}: {
-  symbol: string;
-  displayName: string;
-  target: "supply" | "stake";
-  protocol: string;
-  externalUrl?: string;
-  reasoning: string;
-  confidence: string;
-}) {
+}: CardData) {
+  const isExternalSupply = target === "supply" && protocol !== "Stratus";
+
   return (
     <div className="card p-5">
       <div className="mb-2 flex items-center gap-3">
@@ -191,7 +214,17 @@ function RecommendationCard({
         </div>
       </div>
       <p className="mb-3 text-sm text-slate-600">{reasoning}</p>
-      {externalUrl ? (
+
+      {isExternalSupply && poolAddress && tokenAddress && decimals !== undefined ? (
+        <ExternalSupplyAction
+          protocol={protocol}
+          symbol={symbol}
+          poolAddress={poolAddress}
+          tokenAddress={tokenAddress}
+          decimals={decimals}
+          externalUrl={externalUrl}
+        />
+      ) : externalUrl ? (
         <a
           href={externalUrl}
           target="_blank"
@@ -208,6 +241,90 @@ function RecommendationCard({
           {target === "supply" ? "Go to Markets →" : "Go to Stake →"}
         </Link>
       )}
+    </div>
+  );
+}
+
+/** Executes a real approve+deposit straight into an external protocol's
+ * own LendingPool (Bonzo Finance today) — same Aave v2 interface
+ * Stratus's own pool uses, called directly with the already-connected
+ * wallet. No redirect: this signs a transaction against a contract
+ * Stratus doesn't own or control, same as clicking "Supply" anywhere
+ * else in this app, just pointed at someone else's pool. The user needs
+ * that protocol's own reserve token (not a Stratus one) in their wallet. */
+function ExternalSupplyAction({
+  protocol,
+  symbol,
+  poolAddress,
+  tokenAddress,
+  decimals,
+  externalUrl,
+}: {
+  protocol: string;
+  symbol: string;
+  poolAddress: string;
+  tokenAddress: string;
+  decimals: number;
+  externalUrl?: string;
+}) {
+  const { signer, address, connect } = useWallet();
+  const [amount, setAmount] = useState("1");
+  const [status, setStatus] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function handleSupply() {
+    if (!signer || !address) return;
+    setBusy(true);
+    setStatus(null);
+    try {
+      const token = getErc20(tokenAddress, signer);
+      const pool = new Contract(poolAddress, LENDING_POOL_ABI, signer);
+      const supplyAmount = parseUnits(amount, decimals);
+
+      setStatus(`Approving ${symbol} for ${protocol}…`);
+      await (await token.approve(poolAddress, supplyAmount)).wait();
+      setStatus(`Supplying ${amount} ${symbol} on ${protocol}…`);
+      const tx = await pool.deposit(tokenAddress, supplyAmount, address, 0);
+      await tx.wait();
+      setStatus(`Supplied ${amount} ${symbol} on ${protocol}. Tx ${tx.hash.slice(0, 10)}…`);
+    } catch (e) {
+      setStatus(e instanceof Error ? e.message : "Supply failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!address) {
+    return (
+      <button onClick={connect} className="btn-secondary w-full text-sm">
+        Connect wallet to supply on {protocol}
+      </button>
+    );
+  }
+
+  return (
+    <div>
+      <div className="mb-2 flex gap-2">
+        <input
+          type="number"
+          min="0"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          className="input text-sm"
+        />
+        <button onClick={handleSupply} disabled={busy || !amount} className="btn-primary whitespace-nowrap text-sm">
+          {busy ? "Working…" : `Supply on ${protocol}`}
+        </button>
+      </div>
+      <p className="text-[11px] text-slate-400">
+        Requires your own {symbol} on {protocol}'s testnet — not a Stratus token.{" "}
+        {externalUrl && (
+          <a href={externalUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">
+            Open {protocol} ↗
+          </a>
+        )}
+      </p>
+      <StatusLine status={status} />
     </div>
   );
 }

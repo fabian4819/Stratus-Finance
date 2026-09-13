@@ -1,5 +1,5 @@
 import { Contract, ZeroAddress, formatEther, formatUnits } from "ethers";
-import { getDataProvider, getStaking } from "../contracts";
+import { getDataProvider, getStaking, getErc20 } from "../contracts";
 import { readProvider } from "../wallet";
 import { individualStocks } from "../individualStocks";
 import { stakingAssets } from "../stakingAssets";
@@ -17,8 +17,12 @@ export interface SupplyCandidate {
   symbol: string;
   displayName: string;
   apyPct: number;
-  /** Set only for protocol !== "Stratus" — where to actually go act on it. */
+  tokenAddress: string;
+  decimals: number;
+  /** Set only for protocol !== "Stratus" — the protocol's own app, and
+   * (poolAddress) the real LendingPool to supply into directly. */
   externalUrl?: string;
+  poolAddress?: string;
 }
 
 export interface StakeCandidate {
@@ -41,9 +45,15 @@ export type Candidate = SupplyCandidate | StakeCandidate;
  * sourced directly from Bonzo's own public repo
  * (github.com/Bonzo-Labs/bonzo-finance-contracts,
  * scripts/outputReserveData.json) — not guessed, not mocked.
- * Read-only: the advisor only reads Bonzo's real rates for comparison,
- * it never deposits into Bonzo on the user's behalf.
+ *
+ * Read-only ranking, but a Bonzo pick can be acted on directly: its
+ * LendingPool is a public contract with the same Aave v2 interface
+ * Stratus's own pool uses, so the already-connected wallet can
+ * approve+deposit straight into it — no redirect required. The user
+ * still needs Bonzo's own reserve tokens (its USDC/HBARX/SAUCE/WHBAR,
+ * not Stratus's) in their wallet to do so; Stratus doesn't provide those.
  */
+export const BONZO_LENDING_POOL = "0xD2d18df1Cf6C69118E0bb861Bc72f5942d1dE516";
 const BONZO_DATA_PROVIDER = "0xf7330B06656DbC4cFaE0f5fE3FF5e5598c762AFa";
 const BONZO_APP_URL = "https://testnet.bonzo.finance";
 const BONZO_RESERVES = [
@@ -63,6 +73,8 @@ const BONZO_RESERVES = [
  * (getUserReserveData against a plain zero address, since liquidityRate
  * is reserve-level data bundled into that per-user call) and merged
  * into the same "supply" bucket — a genuine cross-protocol comparison.
+ * Bonzo reserve decimals are read from the token itself rather than
+ * assumed — HTS tokens don't all use 18 (or even 6).
  *
  * Staking candidates are the 20 crypto reserves' StratusStaking pools.
  * stratPerTokenPerYear is a token-denominated rate (STRAT per staked
@@ -79,7 +91,15 @@ export async function loadCandidates(): Promise<{ supply: SupplyCandidate[]; sta
     individualStocks.map(async (a) => {
       const data = await dataProvider.getUserReserveData(a.tokenAddress, ZeroAddress);
       const apyPct = (Number(data.liquidityRate) / RAY) * 100;
-      return { target: "supply" as const, protocol: "Stratus" as const, symbol: a.symbol, displayName: a.displayName, apyPct };
+      return {
+        target: "supply" as const,
+        protocol: "Stratus" as const,
+        symbol: a.symbol,
+        displayName: a.displayName,
+        apyPct,
+        tokenAddress: a.tokenAddress,
+        decimals: 18, // every GOLD-x/STOCK-x/stock ATS token is 18-decimal
+      };
     })
   );
 
@@ -87,7 +107,10 @@ export async function loadCandidates(): Promise<{ supply: SupplyCandidate[]; sta
     await Promise.all(
       BONZO_RESERVES.map(async (a): Promise<SupplyCandidate | null> => {
         try {
-          const data = await bonzoDataProvider.getUserReserveData(a.tokenAddress, ZeroAddress);
+          const [data, decimals] = await Promise.all([
+            bonzoDataProvider.getUserReserveData(a.tokenAddress, ZeroAddress),
+            getErc20(a.tokenAddress, readProvider).decimals(),
+          ]);
           const apyPct = (Number(data.liquidityRate) / RAY) * 100;
           return {
             target: "supply",
@@ -95,7 +118,10 @@ export async function loadCandidates(): Promise<{ supply: SupplyCandidate[]; sta
             symbol: a.symbol,
             displayName: a.displayName,
             apyPct,
+            tokenAddress: a.tokenAddress,
+            decimals: Number(decimals),
             externalUrl: BONZO_APP_URL,
+            poolAddress: BONZO_LENDING_POOL,
           };
         } catch {
           // Bonzo's testnet RPC hiccups or a reserve address is stale —

@@ -36,6 +36,17 @@ const CRYPTO_TICKERS = new Set([
   "AVAX", "SHIB", "LINK", "DOT", "BCH", "TON", "SUI", "NEAR", "LTC", "ICP", "UNI",
 ]);
 
+/** Hedera-ecosystem tokens (Bonzo Finance reserves) — not in the generic
+ * cryptocurrency-icons set, so pulled directly from CoinGecko's asset
+ * CDN (real project logos, found via CoinGecko's public coin API/search,
+ * not guessed). WHBAR (wrapped HBAR) reuses HBAR's own logo — same asset. */
+const HEDERA_ICON: Record<string, string> = {
+  HBAR: "https://coin-images.coingecko.com/coins/images/3688/large/hbar.png",
+  WHBAR: "https://coin-images.coingecko.com/coins/images/3688/large/hbar.png",
+  HBARX: "https://coin-images.coingecko.com/coins/images/28590/large/hbarx.png",
+  SAUCE: "https://coin-images.coingecko.com/coins/images/27401/large/SAUCE_ICON_FINAL_200x200.png",
+};
+
 const svgDataUri = (svg: string) => "data:image/svg+xml," + encodeURIComponent(svg.replace(/\s+/g, " ").trim());
 
 const GOLD_COIN = svgDataUri(`
@@ -66,6 +77,7 @@ export function assetLogo(symbol: string): AssetLogo | null {
     return { url: SP500_MARK, fitted: false };
   }
   if (STOCK_TICKER[s]) return { url: STOCK_ICON(STOCK_TICKER[s]), fitted: true };
+  if (HEDERA_ICON[s]) return { url: HEDERA_ICON[s], fitted: false };
   if (CRYPTO_TICKERS.has(s)) return { url: CRYPTO_ICON(s), fitted: false };
   return null;
 }

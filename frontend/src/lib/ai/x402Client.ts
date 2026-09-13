@@ -26,6 +26,9 @@ export interface PremiumPick {
   target: "supply" | "stake";
   protocol: string;
   externalUrl?: string;
+  poolAddress?: string;
+  tokenAddress?: string;
+  decimals?: number;
   symbol: string;
   displayName: string;
   rate: number;
