@@ -17,6 +17,23 @@ export const ERC20_ABI = [
 /** MockUSDC and MockCrypto both expose an open `mint` for testnet faucet use. */
 export const MINTABLE_ERC20_ABI = [...ERC20_ABI, "function mint(address to, uint256 amount)"];
 
+export const STRATUS_BASKET_TOKEN_ABI = [
+  ...ERC20_ABI,
+  "function previewComponents(uint256 basketAmount) view returns (uint256 amountA, uint256 amountB)",
+  "function mint(uint256 basketAmount) returns (uint256 amountA, uint256 amountB)",
+  "function redeem(uint256 basketAmount) returns (uint256 amountA, uint256 amountB)",
+  "function componentA() view returns (address)",
+  "function componentB() view returns (address)",
+  "function ratioABps() view returns (uint256)",
+];
+
+export const STRATUS_VAULT_ABI = [
+  "function depositBasket(uint256 basketAmount)",
+  "function recomposeBasket(uint256 basketAmount)",
+  "event BasketDecomposed(address indexed user, uint256 basketAmount, uint256 amountA, uint256 amountB)",
+  "event BasketRecomposed(address indexed user, uint256 basketAmount, uint256 amountA, uint256 amountB)",
+];
+
 export const LENDING_POOL_ABI = [
   "function deposit(address asset, uint256 amount, address onBehalfOf, uint16 referralCode)",
   "function withdraw(address asset, uint256 amount, address to) returns (uint256)",

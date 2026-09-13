@@ -43,6 +43,8 @@ function importEnv(key: string): string {
 // addresses are allowed to be blank since only one is actually live at a
 // time in practice.
 const REQUIRED_KEYS: (keyof typeof addresses)[] = [
+  "stratusBasketToken",
+  "stratusVault",
   "stratusRiskView",
   "lendingPool",
   "protocolDataProvider",
